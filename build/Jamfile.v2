@@ -1,0 +1,50 @@
+# Boost.Job Library Build Jamfile
+
+#          Copyright Oliver Kowalke 2015.
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+
+import feature ;
+import modules ;
+import toolset ;
+
+project boost/job
+    : requirements
+      <library>/boost/fiber//boost_fiber
+      <toolset>gcc,<segmented-stacks>on:<cxxflags>-fsplit-stack
+      <toolset>gcc,<segmented-stacks>on:<cxxflags>-DBOOST_USE_SEGMENTED_STACKS
+      <toolset>clang,<segmented-stacks>on:<cxxflags>-fsplit-stack
+      <toolset>clang,<segmented-stacks>on:<cxxflags>-DBOOST_USE_SEGMENTED_STACKS
+      <link>shared:<define>BOOST_JOBS_DYN_LINK=1
+      <define>BOOST_JOBS_SOURCE
+      <threading>multi
+    : usage-requirements
+      <link>shared:<define>BOOST_JOBS_DYN_LINK=1
+      <optimization>speed:<define>BOOST_DISABLE_ASSERTS
+      <variant>release:<define>BOOST_DISABLE_ASSERTS
+    : source-location ../src
+    ;
+
+alias topology_sources
+    : topology_windows.cpp
+    : <target-os>windows
+    ;
+
+alias topology_sources
+    : topology_linux.cpp
+    : <target-os>linux
+    ;
+
+alias topology_sources
+    : topology_unsuported.cpp
+    ;
+
+explicit topology_sources ;
+
+lib boost_fiber
+    : topology_sources
+    : <link>shared:<library>../../fiber/build//boost_fiber
+    ;
+
+boost-install boost_fiber ;
