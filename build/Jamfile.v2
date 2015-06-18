@@ -12,6 +12,7 @@ import toolset ;
 project boost/job
     : requirements
       <library>/boost/fiber//boost_fiber
+      <library>/boost/filesystem//boost_filesystem
       <toolset>gcc,<segmented-stacks>on:<cxxflags>-fsplit-stack
       <toolset>gcc,<segmented-stacks>on:<cxxflags>-DBOOST_USE_SEGMENTED_STACKS
       <toolset>clang,<segmented-stacks>on:<cxxflags>-fsplit-stack
@@ -42,9 +43,10 @@ alias topology_sources
 
 explicit topology_sources ;
 
-lib boost_fiber
+lib boost_job
     : topology_sources
     : <link>shared:<library>../../fiber/build//boost_fiber
+      <link>shared:<library>../../filesystem/build//boost_filesystem
     ;
 
-boost-install boost_fiber ;
+boost-install boost_job ;

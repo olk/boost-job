@@ -7,4 +7,6 @@
 #ifndef BOOST_JOBS_ALL_H
 #define BOOST_JOBS_ALL_H
 
+#include <boost/job/topology.hpp>
+
 #endif // BOOST_JOBS_ALL_H

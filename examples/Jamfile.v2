@@ -1,0 +1,27 @@
+# Boost.Job Library Examples Jamfile
+
+#          Copyright Oliver Kowalke 2015.
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          http://www.boost.org/LICENSE_1_0.txt)
+
+# For more information, see http://www.boost.org/
+
+import common ;
+import feature ;
+import indirect ;
+import modules ;
+import os ;
+import toolset ;
+import architecture ;
+
+project boost/job/example
+    : requirements
+      <library>../build//boost_job
+      <link>static
+      <threading>multi
+    ;
+
+exe topology
+    : topology.cpp
+    ;
