@@ -25,3 +25,7 @@ project boost/job/example
 exe topology
     : topology.cpp
     ;
+
+exe fibonacci
+    : fibonacci.cpp
+    ;

@@ -27,13 +27,26 @@ project boost/job
     : source-location ../src
     ;
 
+
+alias pin_sources
+    : windows/pin.cpp
+    : <target-os>windows
+    ;
+
+alias pin_sources
+    : posix/pin.cpp
+    ;
+
+explicit pin_sources ;
+
+
 alias topology_sources
-    : topology_windows.cpp
+    : windows/topology.cpp
     : <target-os>windows
     ;
 
 alias topology_sources
-    : topology_linux.cpp
+    : linux/topology.cpp
     : <target-os>linux
     ;
 
@@ -43,8 +56,12 @@ alias topology_sources
 
 explicit topology_sources ;
 
+
 lib boost_job
-    : topology_sources
+    : pin_sources
+      topology_sources
+      detail/worker_thread.cpp
+      scheduler.cpp
     : <link>shared:<library>../../fiber/build//boost_fiber
       <link>shared:<library>../../filesystem/build//boost_filesystem
     ;

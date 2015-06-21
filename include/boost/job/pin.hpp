@@ -4,13 +4,11 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_JOBS_TOPOLOGY_H
-#define BOOST_JOBS_TOPOLOGY_H
+#ifndef BOOST_JOBS_PIN_H
+#define BOOST_JOBS_PIN_H
 
 #include <cstdint>
-#include <set>
-#include <utility>
-#include <vector>
+#include <thread>
 
 #include <boost/config.hpp>
 
@@ -23,16 +21,10 @@
 namespace boost {
 namespace jobs {
 
-struct topo_t {
-    uint32_t    node_id;
-    uint32_t    cpu_id;
-    std::set< uint32_t > l2_shared_with;
-    std::set< uint32_t > l3_shared_with;
-    std::set< uint32_t > at_same_core;
-};
-
 BOOST_JOBS_DECL
-std::vector< topo_t > cpu_topology();
+void pin_thread( std::thread::native_handle_type, uint32_t);
+BOOST_JOBS_DECL
+void pin_thread( uint32_t);
 
 }}
 
@@ -40,4 +32,4 @@ std::vector< topo_t > cpu_topology();
 # include BOOST_ABI_SUFFIX
 #endif
 
-#endif // BOOST_JOBS_TOPOLOGY_H
+#endif // BOOST_JOBS_PIN_H

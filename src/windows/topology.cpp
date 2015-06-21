@@ -4,9 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include <boost/config.hpp>
-
-#include <boost/job/topology.hpp>
+#include "boost/job/topology.hpp"
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -14,6 +12,15 @@
 
 namespace boost {
 namespace jobs {
+
+BOOST_JOBS_DECL
+std::vector< topo_t > cpu_topology() {
+    std::vector< topo_t > topo;
+
+    // TODO
+
+    return topo;
+}
 
 }}
 

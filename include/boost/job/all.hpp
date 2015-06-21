@@ -7,6 +7,8 @@
 #ifndef BOOST_JOBS_ALL_H
 #define BOOST_JOBS_ALL_H
 
+#include <boost/job/pin.hpp>
+#include <boost/job/scheduler.hpp>
 #include <boost/job/topology.hpp>
 
 #endif // BOOST_JOBS_ALL_H
