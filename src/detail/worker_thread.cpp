@@ -20,54 +20,51 @@ namespace jobs {
 namespace detail {
 
 worker_thread::worker_thread() :
-    shtdwn_( nullptr),
+    use_count_( 0),
     topology_(),
-    thrd_(),
-    fibers_() {
+    mtx_(),
+    fibers_(),
+    thrd_() {
 }
 
 worker_thread::~worker_thread() {
+    try {
+        shutdown();
+    } catch ( ... ) {
+    }
 }
 
-worker_thread::worker_thread( topo_t const& topology, std::atomic_bool * shtdwn) :
-    shtdwn_( shtdwn),
-    topology_( topology),
-    thrd_( std::move(
-            std::thread(
-                [=](){
-                }) ) ),
-    fibers_() {
-}
-
-worker_thread::worker_thread( worker_thread && other) :
-    shtdwn_( other.shtdwn_),
-    topology_( std::move( other.topology_) ),
-    thrd_( std::move( other.thrd_) ),
-    fibers_( std::move( other.fibers_) ) {
-    other.shtdwn_ = nullptr;
-}
-
-worker_thread &
-worker_thread::operator=( worker_thread && other) {
-    if ( this == & other) {
-        return * this;
+void
+worker_thread::worker_fn_( std::atomic_bool * shtdwn) {
+    for ( int i = 0; i < 64; ++i) {
+        fibers_.push_back( std::move( worker_fiber( shtdwn) ) );
     }
 
-    shtdwn_ = other.shtdwn_;
-    other.shtdwn_ = nullptr;
-    topology_ = std::move( other.topology_);
-    thrd_ = std::move( other.thrd_);
-    fibers_ = std::move( other.fibers_);
-    return * this;
+    std::unique_lock< std::mutex > lk( mtx_);
+    for ( worker_fiber & f : fibers_) {
+        f.join();
+    }
+    fibers_.clear();
+}
+
+worker_thread::worker_thread( topo_t const& topology, std::atomic_bool & shtdwn) :
+    use_count_( 0),
+    topology_( topology),
+    mtx_(),
+    fibers_(),
+    thrd_( & worker_thread::worker_fn_, this, & shtdwn) {
 }
 
 void
-worker_thread::join() {
-    thrd_.join();
-}
-
-void
-worker_thread::interrupt() {
+worker_thread::shutdown() {
+    std::unique_lock< std::mutex > lk( mtx_);
+    for ( worker_fiber & f : fibers_) {
+        f.interrupt();
+    }
+    lk.unlock();
+    if ( thrd_.joinable() ) {
+        thrd_.join();
+    }
 }
 
 }}}

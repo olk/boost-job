@@ -6,6 +6,8 @@
 
 #include "boost/job/scheduler.hpp"
 
+#include <algorithm> // std::move()
+
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
 #endif
@@ -35,16 +37,15 @@ scheduler::scheduler( std::vector< topo_t > const& topology) :
                         [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
                      + 1) {
     for ( topo_t & topo : topology_) {
-        worker_threads_[topo.cpu_id] = std::move( detail::worker_thread( topo, & shtdwn_) );
+        worker_threads_[topo.cpu_id] = new  detail::worker_thread( topo, shtdwn_);
     }
 }
 
 void
 scheduler::shutdown() {
     shtdwn_ = true;
-    for ( detail::worker_thread & w : worker_threads_) {
-        w.interrupt();
-        w.join();
+    for ( detail::worker_thread::ptr_t w : worker_threads_) {
+        w->shutdown();
     }
     worker_threads_.clear();
 }
