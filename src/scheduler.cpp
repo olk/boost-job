@@ -16,7 +16,6 @@ namespace boost {
 namespace jobs {
 
 scheduler::scheduler() :
-    shtdwn_( false),
     topology_(),
     worker_threads_() {
 }
@@ -29,7 +28,6 @@ scheduler::~scheduler() {
 }
 
 scheduler::scheduler( std::vector< topo_t > const& topology) :
-    shtdwn_( false),
     topology_( topology),
     worker_threads_( std::max_element(
                         topology.begin(),
@@ -37,13 +35,12 @@ scheduler::scheduler( std::vector< topo_t > const& topology) :
                         [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
                      + 1) {
     for ( topo_t & topo : topology_) {
-        worker_threads_[topo.cpu_id] = new  detail::worker_thread( topo, shtdwn_);
+        worker_threads_[topo.cpu_id] = new  detail::worker_thread( topo);
     }
 }
 
 void
 scheduler::shutdown() {
-    shtdwn_ = true;
     for ( detail::worker_thread::ptr_t w : worker_threads_) {
         w->shutdown();
     }

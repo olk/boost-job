@@ -7,7 +7,6 @@
 #ifndef BOOST_JOBS_SCHEDULER_H
 #define BOOST_JOBS_SCHEDULER_H
 
-#include <atomic>
 #include <cstddef>
 #include <functional>
 #include <future>
@@ -31,7 +30,6 @@ namespace jobs {
 
 class BOOST_JOBS_DECL scheduler {
 private:
-    std::atomic_bool                            shtdwn_;
     std::vector< topo_t >                       topology_;
     std::vector< detail::worker_thread::ptr_t > worker_threads_;
 

@@ -12,7 +12,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <future>
-#include <mutex>
 #include <thread>
 #include <type_traits> // std::result_of
 #include <utility> // std::forward()
@@ -36,22 +35,22 @@ namespace detail {
 
 class BOOST_JOBS_DECL worker_thread {
 private:
-    std::size_t                     use_count_;
-    topo_t                          topology_;
-    std::mutex                      mtx_;
-    std::vector< worker_fiber >     fibers_;
-    std::thread                     thrd_;
+    std::size_t                         use_count_;
+    std::atomic_bool                    shtdwn_;
+    topo_t                              topology_;
+    std::vector< worker_fiber >     *   fibers_;
+    std::thread                         thrd_;
 
-    void worker_fn_( std::atomic_bool *);
+    void worker_fn_();
 
 public:
     typedef intrusive_ptr< worker_thread >  ptr_t;
 
     worker_thread();
+
+    worker_thread( topo_t const&);
     
     ~worker_thread();
-
-    worker_thread( topo_t const&, std::atomic_bool &);
 
     worker_thread( worker_thread const&) = delete;
 

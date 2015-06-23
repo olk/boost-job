@@ -9,7 +9,11 @@
 #include <algorithm> // std::move()
 #include <vector>
 
+#include <boost/assert.hpp>
 #include <boost/fiber/fiber.hpp>
+
+#include "boost/job/detail/barrier.hpp"
+#include "boost/job/pin.hpp"
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -19,12 +23,39 @@ namespace boost {
 namespace jobs {
 namespace detail {
 
+void
+worker_thread::worker_fn_() {
+    // pin thread to CPU
+    pin_thread( topology_.cpu_id);
+
+    int N = 64;
+    // create worker fibers
+    std::vector< worker_fiber > fibs( N);
+    for ( int i = 0; i < N; ++i) {
+        fibs[i] = std::move( worker_fiber( & shtdwn_) );
+    }
+    fibers_ = & fibs;
+
+    // join fibers
+    for ( worker_fiber & f : fibs) {
+        f.join();
+    }
+}
+
 worker_thread::worker_thread() :
     use_count_( 0),
+    shtdwn_( false),
     topology_(),
-    mtx_(),
-    fibers_(),
+    fibers_( nullptr),
     thrd_() {
+}
+
+worker_thread::worker_thread( topo_t const& topology) :
+    use_count_( 0),
+    shtdwn_( false),
+    topology_( topology),
+    fibers_(),
+    thrd_( & worker_thread::worker_fn_, this) {
 }
 
 worker_thread::~worker_thread() {
@@ -35,34 +66,11 @@ worker_thread::~worker_thread() {
 }
 
 void
-worker_thread::worker_fn_( std::atomic_bool * shtdwn) {
-    for ( int i = 0; i < 64; ++i) {
-        fibers_.push_back( std::move( worker_fiber( shtdwn) ) );
-    }
-
-    std::unique_lock< std::mutex > lk( mtx_);
-    for ( worker_fiber & f : fibers_) {
-        f.join();
-    }
-    fibers_.clear();
-}
-
-worker_thread::worker_thread( topo_t const& topology, std::atomic_bool & shtdwn) :
-    use_count_( 0),
-    topology_( topology),
-    mtx_(),
-    fibers_(),
-    thrd_( & worker_thread::worker_fn_, this, & shtdwn) {
-}
-
-void
 worker_thread::shutdown() {
-    std::unique_lock< std::mutex > lk( mtx_);
-    for ( worker_fiber & f : fibers_) {
-        f.interrupt();
-    }
-    lk.unlock();
     if ( thrd_.joinable() ) {
+        BOOST_ASSERT( ! shtdwn_);
+        shtdwn_ = true;
+        // TODO: interrupt worker fibers
         thrd_.join();
     }
 }
