@@ -20,6 +20,7 @@ namespace jobs {
 namespace detail {
 
 worker_fiber::worker_fiber() :
+    queue_( nullptr),
     fib_() {
 }
 
@@ -27,18 +28,26 @@ worker_fiber::~worker_fiber() {
 }
 
 void
-worker_fiber::worker_fn_( std::atomic_bool * shtdwn) {
-    while ( ! shtdwn) {
-        // TODO: dequeue jobs from MPSC-queue and process jobs
+worker_fiber::worker_fn_( std::atomic_bool * shtdwn, fibers::unbounded_channel< worker::ptr_t > * queue) {
+    while ( ! shtdwn->load() ) {
+        try {
+            // dequeue + process work items
+            worker::ptr_t j = queue->value_pop();
+            j->execute();
+        } catch ( fibers::fiber_interrupted const&) {
+            // do nothing; shtdwn should be set to true
+        }
     }
 }
 
-worker_fiber::worker_fiber( std::atomic_bool * shtdwn) :
-    fib_( & worker_fiber::worker_fn_, this, shtdwn) {
+worker_fiber::worker_fiber( std::atomic_bool * shtdwn, fibers::unbounded_channel< worker::ptr_t > * queue) :
+    fib_( & worker_fiber::worker_fn_, this, shtdwn, queue) {
 }
 
 worker_fiber::worker_fiber( worker_fiber && other) :
+    queue_( other.queue_),
     fib_( std::move( other.fib_) ) {
+    other.queue_ = nullptr;
 }
 
 worker_fiber &
@@ -46,6 +55,8 @@ worker_fiber::operator=( worker_fiber && other) {
     if ( this == & other) {
         return * this;
     }
+    queue_ = other.queue_;
+    other.queue_ = nullptr;
     fib_ = std::move( other.fib_);
     return * this;
 }

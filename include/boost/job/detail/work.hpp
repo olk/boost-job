@@ -4,8 +4,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_JOBS_DETAIL_JOB_H
-#define BOOST_JOBS_DETAIL_JOB_H
+#ifndef BOOST_JOBS_DETAIL_WORK_H
+#define BOOST_JOBS_DETAIL_WORK_H
 
 #include <cstddef>
 #include <tuple>
@@ -25,57 +25,62 @@ namespace boost {
 namespace jobs {
 namespace detail {
 
-class job {
+class worker {
 private:
     std::size_t     use_count_;
 
 public:
-    typedef intrusive_ptr< job >    ptr_t;
+    typedef intrusive_ptr< worker >    ptr_t;
 
-    job() :
-        use_count_( 0) {
+    worker() :
+        use_count_( 0),
+        nxt( nullptr) {
     }
 
-    virtual ~job() {}
+    virtual ~worker() {}
 
-    virtual void execute() = 0;
-
-    friend void intrusive_ptr_add_ref( job * b) {
-        ++b->use_count_;
+    virtual void execute() {
+        BOOST_ASSERT_MSG( false, "worker::execute()");
     }
 
-    friend void intrusive_ptr_release( job * b) {
-        BOOST_ASSERT( nullptr != b);
+    friend void intrusive_ptr_add_ref( worker * j) {
+        ++j->use_count_;
+    }
 
-        if ( 0 == --b->use_count_) {
-            delete b;
+    friend void intrusive_ptr_release( worker * j) {
+        BOOST_ASSERT( nullptr != j);
+
+        if ( 0 == --j->use_count_) {
+            delete j;
         }
     }
+
+    worker *   nxt;
 };
 
 template< typename Fn >
-class wrapped_job : public job {
+class wrapped_worker : public worker {
 private:
     Fn      fn_;
 
 public:
-    wrapped_job( Fn && fn) :
+    wrapped_worker( Fn && fn) :
         fn_( std::forward< Fn >( fn) ) {
     }
 
-    void execute() {
+    void execute() override final {
         fn_();
     }
 };
 
 template< typename Fn >
-static job * create_wrapped_job_( Fn && fn) {
-    return new wrapped_job< Fn >( std::forward< Fn >( fn) );
+static worker * create_wrapped_worker_( Fn && fn) {
+    return new wrapped_worker< Fn >( std::forward< Fn >( fn) );
 }
 
 template< typename Fn, typename Tpl, std::size_t ... I >
-static job * create_job_( Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) {
-    return create_wrapped_job_(
+static worker * create_worker_( Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) {
+    return create_wrapped_worker_(
             [fn=std::forward< Fn >( fn_),tpl=std::forward< Tpl >( tpl_)] () mutable {
                 fn(
                     // non-type template parameter pack used to extract the
@@ -88,9 +93,9 @@ static job * create_job_( Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) 
 }
 
 template< typename Fn, typename ... Args >
-job::ptr_t create_job( Fn && fn, Args && ... args) {
-    return job::ptr_t(
-                create_job_(
+worker::ptr_t create_worker( Fn && fn, Args && ... args) {
+    return worker::ptr_t(
+                create_worker_(
                     std::forward< Fn >( fn),
                     std::make_tuple( std::forward< Args >( args) ... ),
                     std::index_sequence_for< Args ... >() ) );
@@ -102,4 +107,4 @@ job::ptr_t create_job( Fn && fn, Args && ... args) {
 # include BOOST_ABI_SUFFIX
 #endif
 
-#endif // BOOST_JOBS_DETAIL_JOB_H
+#endif // BOOST_JOBS_DETAIL_WORK_H

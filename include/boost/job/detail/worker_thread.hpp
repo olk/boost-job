@@ -15,14 +15,15 @@
 #include <thread>
 #include <type_traits> // std::result_of
 #include <utility> // std::forward()
-#include <vector>
 
 #include <boost/config.hpp>
+#include <boost/fiber/unbounded_channel.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <boost/job/detail/config.hpp>
-#include <boost/job/detail/job.hpp>
+#include <boost/job/detail/rendezvous.hpp>
 #include <boost/job/detail/worker_fiber.hpp>
+#include <boost/job/detail/work.hpp>
 #include <boost/job/topology.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -35,11 +36,12 @@ namespace detail {
 
 class BOOST_JOBS_DECL worker_thread {
 private:
-    std::size_t                         use_count_;
-    std::atomic_bool                    shtdwn_;
-    topo_t                              topology_;
-    std::vector< worker_fiber >     *   fibers_;
-    std::thread                         thrd_;
+    std::size_t                             use_count_;
+    std::atomic_bool                        shtdwn_;
+    rendezvous                              ntfy_;
+    topo_t                                  topology_;
+    fibers::unbounded_channel< worker::ptr_t > queue_;
+    std::thread                             thrd_;
 
     void worker_fn_();
 
@@ -66,10 +68,9 @@ public:
 
         tsk_t pt( std::forward< Fn >( fn) );
         std::future< result_t > f( pt.get_future() );
-        detail::job::ptr_t j = detail::create_job(
-            std::forward< tsk_t >( pt), std::forward< Args >( args) ... );
-        // TODO: enqueue j into MPSC-queue
-        j->execute();
+        // enqueue j into MPSC-queue
+        queue_.push( create_worker(
+            std::forward< tsk_t >( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
     }
 

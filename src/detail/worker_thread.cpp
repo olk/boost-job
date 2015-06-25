@@ -12,7 +12,6 @@
 #include <boost/assert.hpp>
 #include <boost/fiber/fiber.hpp>
 
-#include "boost/job/detail/barrier.hpp"
 #include "boost/job/pin.hpp"
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -28,33 +27,45 @@ worker_thread::worker_fn_() {
     // pin thread to CPU
     pin_thread( topology_.cpu_id);
 
-    int N = 64;
-    // create worker fibers
-    std::vector< worker_fiber > fibs( N);
-    for ( int i = 0; i < N; ++i) {
-        fibs[i] = std::move( worker_fiber( & shtdwn_) );
-    }
-    fibers_ = & fibs;
+    // create + join master fiber
+    fibers::fiber([=] () {
+                    int N = 64;
+                    // create worker fibers
+                    std::vector< worker_fiber > fibs( N);
+                    for ( int i = 0; i < N; ++i) {
+                        fibs[i] = std::move( worker_fiber( & shtdwn_, & queue_) );
+                    }
 
-    // join fibers
-    for ( worker_fiber & f : fibs) {
-        f.join();
-    }
+                    // wait for termination notification
+                    ntfy_.wait();
+
+                    // interrupt worker fibers
+                    for ( worker_fiber & f : fibs) {
+                        f.interrupt();
+                    }
+
+                    // join worker fibers
+                    for ( worker_fiber & f : fibs) {
+                        f.join();
+                    }
+                }).join();
 }
 
 worker_thread::worker_thread() :
     use_count_( 0),
     shtdwn_( false),
+    ntfy_(),
     topology_(),
-    fibers_( nullptr),
+    queue_(),
     thrd_() {
 }
 
 worker_thread::worker_thread( topo_t const& topology) :
     use_count_( 0),
     shtdwn_( false),
+    ntfy_(),
     topology_( topology),
-    fibers_(),
+    queue_(),
     thrd_( & worker_thread::worker_fn_, this) {
 }
 
@@ -69,8 +80,11 @@ void
 worker_thread::shutdown() {
     if ( thrd_.joinable() ) {
         BOOST_ASSERT( ! shtdwn_);
+        // set termination flag
         shtdwn_ = true;
-        // TODO: interrupt worker fibers
+        // notify master fiber
+        ntfy_.notify();
+        // join worker thread
         thrd_.join();
     }
 }

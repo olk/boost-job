@@ -17,7 +17,6 @@
 #include <boost/config.hpp>
 
 #include <boost/job/detail/config.hpp>
-#include <boost/job/detail/job.hpp>
 #include <boost/job/detail/worker_thread.hpp>
 #include <boost/job/topology.hpp>
 

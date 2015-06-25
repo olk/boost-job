@@ -4,14 +4,14 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_JOBS_DETAIL_BARRIER_H
-#define BOOST_JOBS_DETAIL_BARRIER_H
+#ifndef BOOST_JOBS_DETAIL_RENDEZVOUS_H
+#define BOOST_JOBS_DETAIL_RENDEZVOUS_H
 
-#include <condition_variable>
 #include <cstddef>
-#include <mutex>
 
 #include <boost/config.hpp>
+#include <boost/fiber/condition.hpp>
+#include <boost/fiber/mutex.hpp>
 
 #include <boost/job/detail/config.hpp>
 
@@ -23,21 +23,21 @@ namespace boost {
 namespace jobs {
 namespace detail {
 
-class BOOST_JOBS_DECL barrier {
+class BOOST_JOBS_DECL rendezvous {
 private:
-	std::size_t             initial_;
-	std::size_t             current_;
-	bool                    cycle_;
-    std::mutex              mtx_;
-    std::condition_variable cond_;
+	bool                flag_;
+    fibers::mutex       mtx_;
+    fibers::condition   cond_;
 
 public:
-	barrier( std::size_t);
+	rendezvous();
 
-    barrier( barrier const&) = delete;
-    barrier & operator=( barrier const&) = delete;
+    rendezvous( rendezvous const&) = delete;
+    rendezvous & operator=( rendezvous const&) = delete;
 
-	bool wait();
+	void notify();
+
+	void wait();
 };
 
 }}}
@@ -46,4 +46,4 @@ public:
 #  include BOOST_ABI_SUFFIX
 #endif
 
-#endif // BOOST_JOBS_DETAIL_BARRIER_H
+#endif // BOOST_JOBS_DETAIL_RENDEZVOUS_H

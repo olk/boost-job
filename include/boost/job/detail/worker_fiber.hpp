@@ -11,8 +11,10 @@
 
 #include <boost/config.hpp>
 #include <boost/fiber/fiber.hpp>
+#include <boost/fiber/unbounded_channel.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/work.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -24,16 +26,17 @@ namespace detail {
 
 class BOOST_JOBS_DECL worker_fiber {
 private:
-    fibers::fiber           fib_;
+    fibers::unbounded_channel< worker::ptr_t > *   queue_;
+    fibers::fiber                               fib_;
 
-    void worker_fn_( std::atomic_bool *);
+    void worker_fn_( std::atomic_bool *, fibers::unbounded_channel< worker::ptr_t > *);
 
 public:
     worker_fiber();
     
     ~worker_fiber();
 
-    worker_fiber( std::atomic_bool *);
+    worker_fiber( std::atomic_bool *, fibers::unbounded_channel< worker::ptr_t > *);
 
     worker_fiber( worker_fiber &&);
 
