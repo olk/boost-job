@@ -1,0 +1,19 @@
+[/
+          Copyright Oliver Kowalke 2015.
+ Distributed under the Boost Software License, Version 1.0.
+    (See accompanying file LICENSE_1_0.txt or copy at
+          http://www.boost.org/LICENSE_1_0.txt
+]
+
+[section:todo TODO]
+
+    * configuration size of fiber-pool per worker thread
+    * configuration stack-type for fibers per worker thread
+    * configuration stack size for fibers per worker thread
+    * configure fiber scheduling algorithm per worker thread
+    * scheudler::submit() returns job; job uses internally std::future<> or boost::fibers::future<>
+    * local enque of task, e.g. create_sub_task()
+    * access topology of worker thread from task code (this_worker::topology())
+    * allocated memory on NUMA node (-> for operator new)
+
+[endsect]
