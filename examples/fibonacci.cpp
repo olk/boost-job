@@ -17,7 +17,7 @@ int main( int argc, char * argv[])
 {
     int n1 = 10, n2 = 15;
     boost::jobs::scheduler s( boost::jobs::cpu_topology() );
-    std::future< int > f1 = s.submit( 0,
+    std::future< int > f1 = s.submit_preempt( 0,
               [n1](){
                   int first = 1, second = 1, third = -1;
                   for ( int i = 2; i < n1; ++i) {
@@ -27,7 +27,7 @@ int main( int argc, char * argv[])
                   }
                   return third;
               });
-    std::future< int > f2 = s.submit( 0,
+    boost::fibers::future< int > f2 = s.submit_coop( 0,
               [n2](){
                   int first = 1, second = 1, third = -1;
                   for ( int i = 2; i < n2; ++i) {

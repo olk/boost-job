@@ -15,6 +15,7 @@
 #include <vector>
 
 #include <boost/config.hpp>
+#include <boost/fiber/future.hpp>
 
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/worker_thread.hpp>
@@ -45,8 +46,15 @@ public:
 
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
-    submit( uint32_t cpuid, Fn && fn, Args && ... args) {
-        return worker_threads_[cpuid]->submit(
+    submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args) {
+        return worker_threads_[cpuid]->submit_preempt(
+            std::forward< Fn >( fn), std::forward< Args >( args) ... );
+    }
+
+    template< typename Fn, typename ... Args >
+    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    submit_coop( uint32_t cpuid, Fn && fn, Args && ... args) {
+        return worker_threads_[cpuid]->submit_coop(
             std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 

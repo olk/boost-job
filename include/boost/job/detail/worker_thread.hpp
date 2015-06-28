@@ -17,6 +17,7 @@
 #include <utility> // std::forward()
 
 #include <boost/config.hpp>
+#include <boost/fiber/future.hpp>
 #include <boost/fiber/unbounded_channel.hpp>
 #include <boost/intrusive_ptr.hpp>
 
@@ -51,7 +52,7 @@ public:
     worker_thread();
 
     worker_thread( topo_t const&);
-    
+
     ~worker_thread();
 
     worker_thread( worker_thread const&) = delete;
@@ -62,13 +63,27 @@ public:
 
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
-    submit( Fn && fn, Args && ... args) {
+    submit_preempt( Fn && fn, Args && ... args) {
         typedef typename std::result_of< Fn( Args ... ) >::type result_t;
         typedef std::packaged_task< result_t( Args ... ) > tsk_t;
 
         tsk_t pt( std::forward< Fn >( fn) );
         std::future< result_t > f( pt.get_future() );
-        // enqueue j into MPSC-queue
+        // enqueue work into MPSC-queue
+        queue_.push( create_worker(
+            std::forward< tsk_t >( pt), std::forward< Args >( args) ... ) );
+        return std::move( f);
+    }
+
+    template< typename Fn, typename ... Args >
+    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    submit_coop( Fn && fn, Args && ... args) {
+        typedef typename std::result_of< Fn( Args ... ) >::type result_t;
+        typedef fibers::packaged_task< result_t( Args ... ) > tsk_t;
+
+        tsk_t pt( std::forward< Fn >( fn) );
+        fibers::future< result_t > f( pt.get_future() );
+        // enqueue work into MPSC-queue
         queue_.push( create_worker(
             std::forward< tsk_t >( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
