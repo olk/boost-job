@@ -11,9 +11,9 @@
 
 #include <boost/config.hpp>
 #include <boost/fiber/fiber.hpp>
-#include <boost/fiber/unbounded_channel.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/queue.hpp>
 #include <boost/job/detail/work.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -26,17 +26,17 @@ namespace detail {
 
 class BOOST_JOBS_DECL worker_fiber {
 private:
-    fibers::unbounded_channel< worker::ptr_t > *   queue_;
-    fibers::fiber                               fib_;
+    queue           *   queue_;
+    fibers::fiber       fib_;
 
-    void worker_fn_( std::atomic_bool *, fibers::unbounded_channel< worker::ptr_t > *);
+    void worker_fn_( std::atomic_bool *, queue *);
 
 public:
     worker_fiber();
     
     ~worker_fiber();
 
-    worker_fiber( std::atomic_bool *, fibers::unbounded_channel< worker::ptr_t > *);
+    worker_fiber( std::atomic_bool *, queue *);
 
     worker_fiber( worker_fiber &&);
 

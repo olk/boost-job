@@ -28,11 +28,11 @@ worker_fiber::~worker_fiber() {
 }
 
 void
-worker_fiber::worker_fn_( std::atomic_bool * shtdwn, fibers::unbounded_channel< worker::ptr_t > * queue) {
+worker_fiber::worker_fn_( std::atomic_bool * shtdwn, queue * q) {
     while ( ! shtdwn->load() ) {
         try {
             // dequeue + process work items
-            worker::ptr_t j = queue->value_pop();
+            work::ptr_t j = q->value_pop();
             j->execute();
         } catch ( fibers::fiber_interrupted const&) {
             // do nothing; shtdwn should be set to true
@@ -40,8 +40,8 @@ worker_fiber::worker_fn_( std::atomic_bool * shtdwn, fibers::unbounded_channel< 
     }
 }
 
-worker_fiber::worker_fiber( std::atomic_bool * shtdwn, fibers::unbounded_channel< worker::ptr_t > * queue) :
-    fib_( & worker_fiber::worker_fn_, this, shtdwn, queue) {
+worker_fiber::worker_fiber( std::atomic_bool * shtdwn, queue * q) :
+    fib_( & worker_fiber::worker_fn_, this, shtdwn, q) {
 }
 
 worker_fiber::worker_fiber( worker_fiber && other) :

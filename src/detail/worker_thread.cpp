@@ -22,10 +22,16 @@ namespace boost {
 namespace jobs {
 namespace detail {
 
+thread_local worker_thread *
+worker_thread::instance_ = nullptr;
+
 void
 worker_thread::worker_fn_() {
     // pin thread to CPU
     pin_thread( topology_.cpu_id);
+
+    // set static thread-local pointer
+    instance_ = this;
 
     // create + join master fiber
     fibers::fiber([=] () {

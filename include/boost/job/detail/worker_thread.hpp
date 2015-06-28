@@ -18,10 +18,10 @@
 
 #include <boost/config.hpp>
 #include <boost/fiber/future.hpp>
-#include <boost/fiber/unbounded_channel.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/queue.hpp>
 #include <boost/job/detail/rendezvous.hpp>
 #include <boost/job/detail/worker_fiber.hpp>
 #include <boost/job/detail/work.hpp>
@@ -37,17 +37,23 @@ namespace detail {
 
 class BOOST_JOBS_DECL worker_thread {
 private:
+    thread_local static worker_thread   *   instance_;
+
     std::size_t                             use_count_;
     std::atomic_bool                        shtdwn_;
     rendezvous                              ntfy_;
     topo_t                                  topology_;
-    fibers::unbounded_channel< worker::ptr_t > queue_;
+    queue                                   queue_;
     std::thread                             thrd_;
 
     void worker_fn_();
 
 public:
     typedef intrusive_ptr< worker_thread >  ptr_t;
+
+    static worker_thread * instance() noexcept {
+        return instance_;
+    }
 
     worker_thread();
 
@@ -70,7 +76,7 @@ public:
         tsk_t pt( std::forward< Fn >( fn) );
         std::future< result_t > f( pt.get_future() );
         // enqueue work into MPSC-queue
-        queue_.push( create_worker(
+        queue_.push( create_work(
             std::forward< tsk_t >( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
     }
@@ -84,7 +90,7 @@ public:
         tsk_t pt( std::forward< Fn >( fn) );
         fibers::future< result_t > f( pt.get_future() );
         // enqueue work into MPSC-queue
-        queue_.push( create_worker(
+        queue_.push( create_work(
             std::forward< tsk_t >( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
     }
