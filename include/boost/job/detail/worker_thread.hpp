@@ -16,6 +16,7 @@
 #include <type_traits> // std::result_of
 #include <utility> // std::forward()
 
+#include <boost/assert.hpp>
 #include <boost/config.hpp>
 #include <boost/fiber/future.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -52,6 +53,7 @@ public:
     typedef intrusive_ptr< worker_thread >  ptr_t;
 
     static worker_thread * instance() noexcept {
+        BOOST_ASSERT( nullptr != instance_);
         return instance_;
     }
 

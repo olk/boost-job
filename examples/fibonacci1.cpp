@@ -13,6 +13,16 @@
 #include <boost/assert.hpp>
 #include <boost/job/all.hpp>
 
+int fibonacci( int n) {
+    int first = 1, second = 1, third = -1;
+    for ( int i = 2; i < n; ++i) {
+        third = first + second;
+        first = second;
+        second = third;
+    }
+    return third;
+}
+
 int main( int argc, char * argv[])
 {
     int n1 = 10, n2 = 15;
@@ -27,16 +37,8 @@ int main( int argc, char * argv[])
                   }
                   return third;
               });
-    boost::fibers::future< int > f2 = s.submit_coop( 0,
-              [n2](){
-                  int first = 1, second = 1, third = -1;
-                  for ( int i = 2; i < n2; ++i) {
-                      third = first + second;
-                      first = second;
-                      second = third;
-                  }
-                  return third;
-              });
+    boost::fibers::future< int > f2 = s.submit_coop( 0, fibonacci, n2);
+
     std::cout << "fibonacci(" << n1 << ") = " << f1.get() << std::endl;
     std::cout << "fibonacci(" << n2 << ") = " << f2.get() << std::endl;
     std::cout << "main: done" << std::endl;

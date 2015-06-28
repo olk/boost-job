@@ -16,6 +16,7 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/invoke.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -82,7 +83,7 @@ template< typename Fn, typename Tpl, std::size_t ... I >
 static work * create_work_( Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) {
     return create_wrapped_work_(
             [fn=std::forward< Fn >( fn_),tpl=std::forward< Tpl >( tpl_)] () mutable {
-                fn(
+                invoke( fn,
                     // non-type template parameter pack used to extract the
                     // parameters (arguments) from the tuple and pass them to fn
                     // via parameter pack expansion
