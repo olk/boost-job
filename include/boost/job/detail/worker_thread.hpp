@@ -15,17 +15,19 @@
 #include <thread>
 #include <type_traits> // std::result_of
 #include <utility> // std::forward()
+#include <vector>
 
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
+#include <boost/fiber/fiber.hpp>
 #include <boost/fiber/future.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/queue.hpp>
 #include <boost/job/detail/rendezvous.hpp>
-#include <boost/job/detail/worker_fiber.hpp>
 #include <boost/job/detail/work.hpp>
+#include <boost/job/pin.hpp>
 #include <boost/job/topology.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -47,7 +49,20 @@ private:
     queue                                   queue_;
     std::thread                             thrd_;
 
-    void worker_fn_();
+    template< typename FiberPool, typename StackAllocator >
+    void worker_fn_( FiberPool && pool, StackAllocator salloc) {
+        // pin thread to CPU
+        pin_thread( topology_.cpu_id);
+
+        // set static thread-local pointer
+        instance_ = this;
+
+        // create + join master fiber
+        // master fiber executes fiber pool
+        fibers::fiber(
+                std::allocator_arg, salloc,
+                std::forward< FiberPool >( pool), salloc, & shtdwn_, & queue_, & ntfy_).join();
+    }
 
 public:
     typedef intrusive_ptr< worker_thread >  ptr_t;
@@ -59,7 +74,15 @@ public:
 
     worker_thread();
 
-    worker_thread( topo_t const&);
+    template< typename FiberPool, typename StackAllocator >
+    worker_thread( topo_t const& topology, FiberPool && pool, StackAllocator salloc) :
+        use_count_( 0),
+        shtdwn_( false),
+        ntfy_(),
+        topology_( topology),
+        queue_(),
+        thrd_( & worker_thread::worker_fn_< FiberPool, StackAllocator >, this, std::forward< FiberPool >( pool), salloc) {
+    }
 
     ~worker_thread();
 
@@ -69,17 +92,21 @@ public:
 
     void shutdown();
 
+    topo_t topology() const noexcept {
+        return topology_;
+    }
+
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_preempt( Fn && fn, Args && ... args) {
         typedef typename std::result_of< Fn( Args ... ) >::type result_t;
-        typedef std::packaged_task< result_t( Args ... ) > tsk_t;
 
-        tsk_t pt( std::forward< Fn >( fn) );
+        std::packaged_task< result_t( typename std::decay< Args >::type ... ) > pt(
+                std::forward< Fn >( fn) );
         std::future< result_t > f( pt.get_future() );
         // enqueue work into MPSC-queue
         queue_.push( create_work(
-            std::forward< tsk_t >( pt), std::forward< Args >( args) ... ) );
+            std::move( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
     }
 
@@ -87,13 +114,13 @@ public:
     fibers::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_coop( Fn && fn, Args && ... args) {
         typedef typename std::result_of< Fn( Args ... ) >::type result_t;
-        typedef fibers::packaged_task< result_t( Args ... ) > tsk_t;
 
-        tsk_t pt( std::forward< Fn >( fn) );
+        fibers::packaged_task< result_t( typename std::decay< Args >::type ... ) > pt(
+                std::forward< Fn >( fn) );
         fibers::future< result_t > f( pt.get_future() );
         // enqueue work into MPSC-queue
         queue_.push( create_work(
-            std::forward< tsk_t >( pt), std::forward< Args >( args) ... ) );
+            std::move( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
     }
 

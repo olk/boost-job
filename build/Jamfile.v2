@@ -61,7 +61,6 @@ lib boost_job
     : pin_sources
       topology_sources
       detail/rendezvous.cpp
-      detail/worker_fiber.cpp
       detail/worker_thread.cpp
       scheduler.cpp
     : <link>shared:<library>../../fiber/build//boost_fiber

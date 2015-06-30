@@ -19,6 +19,8 @@
 
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/worker_thread.hpp>
+#include <boost/job/stack.hpp>
+#include <boost/job/static_pool.hpp>
 #include <boost/job/topology.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -38,7 +40,26 @@ public:
 
     ~scheduler();
 
-    scheduler( std::vector< topo_t > const&);
+    template< typename FiberPool, typename StackAllocator >
+    scheduler( std::vector< topo_t > const& topology,
+               FiberPool && pool,
+               StackAllocator salloc) :
+        topology_( topology),
+        // hold max(CPU-IDs)
+        worker_threads_( std::max_element(
+                    topology.begin(),
+                    topology.end(),
+                    [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
+                + 1) {
+        // only for given CPUs allocate worker threads
+        for ( topo_t & topo : topology_) {
+            worker_threads_[topo.cpu_id] = new  detail::worker_thread( topo, std::forward< FiberPool >( pool), salloc);
+        }
+    }
+
+    scheduler( std::vector< topo_t > const& topology) :
+        scheduler( topology, static_pool< 64 >(), fixedsize_stack() ) {
+    }
 
     scheduler( scheduler const&) = delete;
 

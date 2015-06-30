@@ -15,6 +15,7 @@
 
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/worker_thread.hpp>
+#include <boost/job/topology.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -29,6 +30,11 @@ fibers::future< typename std::result_of< Fn( Args ... ) >::type >
 submit( Fn && fn, Args && ... args) {
     return detail::worker_thread::instance()->submit_coop(
         std::forward< Fn >( fn), std::forward< Args >( args) ... );
+}
+
+inline
+topo_t topology() noexcept {
+    return detail::worker_thread::instance()->topology();
 }
 
 }}}

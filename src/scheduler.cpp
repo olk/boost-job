@@ -27,20 +27,6 @@ scheduler::~scheduler() {
     }
 }
 
-scheduler::scheduler( std::vector< topo_t > const& topology) :
-    topology_( topology),
-    // hold max(CPU-IDs)
-    worker_threads_( std::max_element(
-                        topology.begin(),
-                        topology.end(),
-                        [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
-                     + 1) {
-    // only for given CPUs allocate worker threads
-    for ( topo_t & topo : topology_) {
-        worker_threads_[topo.cpu_id] = new  detail::worker_thread( topo);
-    }
-}
-
 void
 scheduler::shutdown() {
     // shutdown worker threads

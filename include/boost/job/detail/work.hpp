@@ -82,7 +82,7 @@ static work * create_wrapped_work_( Fn && fn) {
 template< typename Fn, typename Tpl, std::size_t ... I >
 static work * create_work_( Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) {
     return create_wrapped_work_(
-            [fn=std::forward< Fn >( fn_),tpl=std::forward< Tpl >( tpl_)] () mutable {
+            [fn=std::forward< Fn >( fn_),tpl=std::forward< Tpl >( tpl_)] () mutable -> decltype( auto) {
                 invoke( fn,
                     // non-type template parameter pack used to extract the
                     // parameters (arguments) from the tuple and pass them to fn

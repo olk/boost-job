@@ -8,11 +8,9 @@
 [section:todo TODO]
 
     * configuration:
+        * type of fiber pool (static or dynamic size of pool)
         * size of fiber-pool per worker thread
-        * stack-type for fibers per worker thread
-        * stack size for fibers per worker thread
         * fiber scheduling algorithm per worker thread
-    * local enque of work, e.g. boost::jobs::this_worker::submit()
     * support custom allocator for detail::work (create work item) via submit()
     * allocated memory on NUMA node (-> for operator new)
 

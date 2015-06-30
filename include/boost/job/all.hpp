@@ -10,6 +10,8 @@
 #include <boost/job/operation.hpp>
 #include <boost/job/pin.hpp>
 #include <boost/job/scheduler.hpp>
+#include <boost/job/stack.hpp>
+#include <boost/job/static_pool.hpp>
 #include <boost/job/topology.hpp>
 
 #endif // BOOST_JOBS_ALL_H
