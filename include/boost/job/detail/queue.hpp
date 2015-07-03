@@ -111,12 +111,12 @@ public:
         close_();
     }
 
-    bool is_closed() const {
+    bool closed() const {
         std::unique_lock< fibers::mutex > lk( mtx_);
         return is_closed_();
     }
 
-    bool is_empty() const {
+    bool empty() const {
         std::unique_lock< fibers::mutex > lk( mtx_);
         return is_empty_();
     }

@@ -27,92 +27,49 @@ namespace boost {
 namespace jobs {
 
 template< std::size_t N >
-class static_pool {
-private:
-    class BOOST_JOBS_DECL worker_fiber {
-    private:
-        detail::queue   *   queue_;
-        fibers::fiber       fib_;
-
-        void worker_fn_( std::atomic_bool * shtdwn, detail::queue * q) {
-            while ( ! shtdwn->load() ) {
-                try {
-                    // dequeue + process work items
-                    q->value_pop()->execute();
-                } catch ( fibers::fiber_interrupted const&) {
-                    // do nothing; shtdwn should be set to true
-                }
-            }
-        }
-
-    public:
-        worker_fiber() :
-            queue_( nullptr),
-            fib_() {
-        }
-        
-        template< typename StackAllocator >
-        worker_fiber( StackAllocator salloc, std::atomic_bool * shtdwn, detail::queue * q) :
-            fib_( std::allocator_arg, salloc, & worker_fiber::worker_fn_, this, shtdwn, q) {
-        }
-
-        worker_fiber( worker_fiber && other) :
-            queue_( other.queue_),
-            fib_( std::move( other.fib_) ) {
-            other.queue_ = nullptr;
-        }
-
-        worker_fiber & operator=( worker_fiber && other) {
-            if ( this == & other) {
-                return * this;
-            }
-            queue_ = other.queue_;
-            other.queue_ = nullptr;
-            fib_ = std::move( other.fib_);
-            return * this;
-        }
-
-        worker_fiber( worker_fiber const&) = delete;
-
-        worker_fiber & operator=( worker_fiber const&) = delete;
-
-        void interrupt() noexcept {
-            fib_.interrupt();
-        }
-
-        void join() {
-            if ( fib_.joinable() ) {
-                try {
-                    fib_.join();
-                } catch ( fibers::fiber_interrupted const&) {
-                }
-            }
-        }
-    };
-
-public:
+struct static_pool {
     static_pool() = default;
 
-    template< typename StackAllocator > 
+    template< typename StackAllocator >
     void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
                      detail::queue * q, detail::rendezvous * ntfy) {
-        std::array< worker_fiber, N > fibs;
+        std::array< fibers::fiber, N > fibs;
         // create worker fibers
         for ( std::size_t i = 0; i < N; ++i) {
-            fibs[i] = std::move( worker_fiber( salloc, shtdwn, q) );
+            fibs[i] = std::move(
+                fibers::fiber( std::allocator_arg, salloc,
+                               [shtdwn,q] () {
+                                    while ( ! shtdwn->load() && ! q->closed() ) {
+                                        try {
+                                            // dequeue work items
+                                            detail::work::ptr_t w;
+                                            if ( detail::queue_op_status::success != q->pop( w) ) {
+                                                continue;
+                                            }
+                                            // process work items
+                                            w->execute();
+                                        } catch ( fibers::fiber_interrupted const&) {
+                                            // do nothing; shtdwn should be set to true
+                                        }
+                                    }
+                                }));
         }
-
         // wait for termination notification
         ntfy->wait();
-
+        // close queue
+        q->close();
         // interrupt worker fibers
-        for ( worker_fiber & f : fibs) {
+        for ( fibers::fiber & f : fibs) {
             f.interrupt();
         }
-
         // join worker fibers
-        for ( worker_fiber & f : fibs) {
-            f.join();
+        for ( fibers::fiber & f : fibs) {
+            if ( f.joinable() ) {
+                try {
+                    f.join();
+                } catch ( fibers::fiber_interrupted const&) {
+                }
+            }
         }
     }
 };

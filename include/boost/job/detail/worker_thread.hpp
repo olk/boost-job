@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <future>
+#include <memory>
 #include <thread>
 #include <type_traits> // std::result_of
 #include <utility> // std::forward()
@@ -96,9 +97,9 @@ public:
         return topology_;
     }
 
-    template< typename Fn, typename ... Args >
+    template< typename Allocator, typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
-    submit_preempt( Fn && fn, Args && ... args) {
+    submit_preempt( std::allocator_arg_t, Allocator alloc, Fn && fn, Args && ... args) {
         typedef typename std::result_of< Fn( Args ... ) >::type result_t;
 
         std::packaged_task< result_t( typename std::decay< Args >::type ... ) > pt(
@@ -106,13 +107,21 @@ public:
         std::future< result_t > f( pt.get_future() );
         // enqueue work into MPSC-queue
         queue_.push( create_work(
+            alloc,
             std::move( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
     }
 
     template< typename Fn, typename ... Args >
+    std::future< typename std::result_of< Fn( Args ... ) >::type >
+    submit_preempt( Fn && fn, Args && ... args) {
+        return submit_preempt( std::allocator_arg, std::allocator< work >(),
+                               std::forward< Fn >( fn), std::forward< Args >( args) ...);
+    }
+
+    template< typename Allocator, typename Fn, typename ... Args >
     fibers::future< typename std::result_of< Fn( Args ... ) >::type >
-    submit_coop( Fn && fn, Args && ... args) {
+    submit_coop( std::allocator_arg_t, Allocator alloc, Fn && fn, Args && ... args) {
         typedef typename std::result_of< Fn( Args ... ) >::type result_t;
 
         fibers::packaged_task< result_t( typename std::decay< Args >::type ... ) > pt(
@@ -120,8 +129,15 @@ public:
         fibers::future< result_t > f( pt.get_future() );
         // enqueue work into MPSC-queue
         queue_.push( create_work(
-            std::move( pt), std::forward< Args >( args) ... ) );
+            alloc, std::move( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
+    }
+
+    template< typename Fn, typename ... Args >
+    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    submit_coop( Fn && fn, Args && ... args) {
+        return submit_coop( std::allocator_arg, std::allocator< work >(),
+                            std::forward< Fn >( fn), std::forward< Args >( args) ...);
     }
 
     friend void intrusive_ptr_add_ref( worker_thread * t) {

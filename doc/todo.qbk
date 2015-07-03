@@ -7,11 +7,7 @@
 
 [section:todo TODO]
 
-    * configuration:
-        * type of fiber pool (static or dynamic size of pool)
-        * size of fiber-pool per worker thread
-        * fiber scheduling algorithm per worker thread
-    * support custom allocator for detail::work (create work item) via submit()
+    * custom fiber scheduling algorithm per worker thread
     * allocated memory on NUMA node (-> for operator new)
 
 [endsect]

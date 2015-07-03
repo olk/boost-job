@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <functional>
 #include <future>
+#include <memory>
 #include <type_traits> // std::result_of
 #include <utility> // std::forward()
 #include <vector>
@@ -18,6 +19,7 @@
 #include <boost/fiber/future.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/work.hpp>
 #include <boost/job/detail/worker_thread.hpp>
 #include <boost/job/stack.hpp>
 #include <boost/job/static_pool.hpp>
@@ -65,18 +67,36 @@ public:
 
     scheduler & operator=( scheduler const&) = delete;
 
+    template< typename Allocator, typename Fn, typename ... Args >
+    std::future< typename std::result_of< Fn( Args ... ) >::type >
+    submit_preempt( std::allocator_arg_t, Allocator alloc,
+                    uint32_t cpuid, Fn && fn, Args && ... args) {
+        return worker_threads_[cpuid]->submit_preempt(
+            std::allocator_arg, alloc,
+            std::forward< Fn >( fn), std::forward< Args >( args) ... );
+    }
+
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args) {
-        return worker_threads_[cpuid]->submit_preempt(
+        return submit_preempt( std::allocator_arg, std::allocator< detail::work >(), cpuid,
+                               std::forward< Fn >( fn), std::forward< Args >( args) ...);
+    }
+
+    template< typename Allocator, typename Fn, typename ... Args >
+    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    submit_coop( std::allocator_arg_t, Allocator alloc,
+                uint32_t cpuid, Fn && fn, Args && ... args) {
+        return worker_threads_[cpuid]->submit_coop(
+            std::allocator_arg, alloc,
             std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
     template< typename Fn, typename ... Args >
     fibers::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_coop( uint32_t cpuid, Fn && fn, Args && ... args) {
-        return worker_threads_[cpuid]->submit_coop(
-            std::forward< Fn >( fn), std::forward< Args >( args) ... );
+        return submit_coop( std::allocator_arg, std::allocator< detail::work >(), cpuid,
+                            std::forward< Fn >( fn), std::forward< Args >( args) ...);
     }
 
     void shutdown();

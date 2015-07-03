@@ -119,7 +119,6 @@ namespace jobs {
 BOOST_JOBS_DECL
 std::vector< topo_t > cpu_topology() {
     std::vector< topo_t > topo;
-
     // 1. parse list of CPUs which are online
     fs::ifstream fs_online( fs::path("/sys/devices/system/cpu/online") );
     std::string content;
@@ -129,7 +128,7 @@ std::vector< topo_t > cpu_topology() {
         // parsing topology failed
         return topo;
     }
-
+    // iterate list of cpu IDs
     for ( uint32_t cpu_id : cpus_online) {
         topo_t item;
         item.cpu_id = cpu_id;
@@ -163,10 +162,9 @@ std::vector< topo_t > cpu_topology() {
         item.at_same_core = ids_from_line( content);
         // remove itself from HT list
         item.at_same_core.erase( cpu_id);
-
+        // store parsed item
         topo.push_back( item);
     }
-
     return topo;
 }
 

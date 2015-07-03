@@ -8,6 +8,7 @@
 #define BOOST_JOBS_DETAIL_WORK_H
 
 #include <cstddef>
+#include <memory>
 #include <tuple>
 #include <utility>
 
@@ -44,6 +45,8 @@ public:
         BOOST_ASSERT_MSG( false, "work::execute()");
     }
 
+    virtual void deallocate() = 0;
+
     friend void intrusive_ptr_add_ref( work * j) {
         ++j->use_count_;
     }
@@ -52,36 +55,53 @@ public:
         BOOST_ASSERT( nullptr != j);
 
         if ( 0 == --j->use_count_) {
-            delete j;
+            j->deallocate();
         }
     }
 
     work::ptr_t   nxt;
 };
 
-template< typename Fn >
+template< typename Allocator, typename Fn >
 class wrapped_work : public work {
-private:
-    Fn      fn_;
-
 public:
-    wrapped_work( Fn && fn) :
+    typedef typename Allocator::template rebind< wrapped_work >::other   allocator_t;
+
+    wrapped_work( allocator_t alloc, Fn && fn) :
+        alloc_( alloc),
         fn_( std::forward< Fn >( fn) ) {
     }
 
     void execute() override final {
         fn_();
     }
+
+    void deallocate() override final {
+        deallocate_( this);
+    }
+
+private:
+    allocator_t alloc_; 
+    Fn          fn_;
+
+    static void deallocate_( wrapped_work * w) {
+        allocator_t alloc( w->alloc_);
+        w->~wrapped_work();
+        alloc.deallocate( w, 1);
+    }
 };
 
-template< typename Fn >
-static work * create_wrapped_work_( Fn && fn) {
-    return new wrapped_work< Fn >( std::forward< Fn >( fn) );
+template< typename Allocator, typename Fn >
+work * create_wrapped_work_( Allocator a, Fn && fn) {
+    typename wrapped_work< Allocator, Fn >::allocator_t alloc( a);
+    work * pw = alloc.allocate( 1);
+    return new ( pw) wrapped_work< Allocator, Fn >( alloc, std::forward< Fn >( fn) );
 }
 
-template< typename Fn, typename Tpl, std::size_t ... I >
-static work * create_work_( Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) {
+template< typename Allocator, typename Fn, typename Tpl, std::size_t ... I >
+static work * create_work_( Allocator alloc, Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) {
     return create_wrapped_work_(
+            alloc,
             [fn=std::forward< Fn >( fn_),tpl=std::forward< Tpl >( tpl_)] () mutable -> decltype( auto) {
                 invoke( fn,
                     // non-type template parameter pack used to extract the
@@ -93,10 +113,11 @@ static work * create_work_( Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >
             });
 }
 
-template< typename Fn, typename ... Args >
-work::ptr_t create_work( Fn && fn, Args && ... args) {
+template< typename Allocator, typename Fn, typename ... Args >
+work::ptr_t create_work( Allocator alloc, Fn && fn, Args && ... args) {
     return work::ptr_t(
                 create_work_(
+                    alloc,
                     std::forward< Fn >( fn),
                     std::make_tuple( std::forward< Args >( args) ... ),
                     std::index_sequence_for< Args ... >() ) );
