@@ -10,6 +10,7 @@ extern "C" {
 #include <windows.h>
 }
 
+#include <cstdio>
 #include <system_error>
 #include <vector>
 
@@ -19,44 +20,99 @@ extern "C" {
 # include BOOST_ABI_PREFIX
 #endif
 
-namespace boost {
-namespace jobs {
+namespace {
 
-// Helper function to count set bits in the processor mask.
-DWORD CountSetBits( ULONG_PTR bitMask) {
-    DWORD LSHIFT = sizeof(ULONG_PTR)*8 - 1;
-    DWORD bitSetCount = 0;
-    ULONG_PTR bitTest = (ULONG_PTR)1 << LSHIFT;    
-    DWORD i;
-    
-    for (i = 0; i <= LSHIFT; ++i)
+using SLPI = SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX;
+
+class procinfo_enumerator {
+public:
+    procinfo_enumerator( LOGICAL_PROCESSOR_RELATIONSHIP relship) :
+        base_( nullptr),
+        current_( nullptr),
+        remaining_( 0)
     {
-        bitSetCount += ((bitMask & bitTest)?1:0);
-        bitTest/=2;
-    }
-
-    return bitSetCount;
-}
-
-
-BOOST_JOBS_DECL
-std::vector< topo_t > cpu_topology() {
-    std::vector< topo_t > topo;
-
-    using SLPI = SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX;
-    std::vector< SLPI > slpi;
-    DWORD size = 0;
-
-    while ( FALSE == ::GetLogicalProcessorInformationEx( RelationAll, slpi.data(), & size) ) {
+        DWORD size = 0;
+        if ( ::GetLogicalProcessorInformationEx( relship, nullptr, & size) ) {
+            return;
+        }
         if ( ERROR_INSUFFICIENT_BUFFER != ::GetLastError() ) {
             throw std::system_error(
                     std::error_code( ::GetLastError(), std::system_category() ),
                     "::GetLogicalProcessorInformation() failed");
         }
-        BOOST_ASSERT( 0 == size % sizeof( SLPI) );
-        slpi.resize( size / sizeof( SLPI) );
+
+        base_ = reinterpret_cast< SLPLI * >( LocalAlloc( LMEM_FIXED, size) );
+        if ( nullptr == base_) {
+            throw std::bad_alloc();
+        }
+
+        if ( ! ::GetLogicalProcessorInformationEx( relship, base_, & size) ) {
+            throw std::system_error(
+                    std::error_code( ::GetLastError(), std::system_category() ),
+                    "::GetLogicalProcessorInformation() failed");
+        }
+
+        current_ = base_;
+        remaining_ = size;
     }
-	
+
+    ~procinfo_enumerator() {
+        LocalFree( base_);
+    }
+
+    void next() {
+        if ( nullptr != current_) {
+            remaining_ -= current_->Size;
+            if ( nullptr != remaining_) {
+                current_ = reinterpret_cast< SLPI * >( reinterpret_cast< BYTE * >( current_) + current_->Size); 
+            } else {
+                current_ = nullptr;
+            }
+        }
+    }
+
+    SLPLI * current() {
+        return current_;
+    }
+
+private:
+    SLPLI   *   base_;
+    SLPLI   *   current_;
+    DWORD       remaining_;
+};
+
+void PrintMask(KAFFINITY Mask)
+{
+ printf(" [");
+ for (int i = 0; i < sizeof(Mask) * 8; i++) {
+  if (Mask & (static_cast<KAFFINITY>(1) << i)) {
+   printf(" %d", i);
+  }
+ }
+ printf(" ]");
+}
+
+}
+
+namespace boost {
+namespace jobs {
+
+BOOST_JOBS_DECL
+std::vector< topo_t > cpu_topology() {
+    std::vector< topo_t > topo;
+
+    for ( procinfo_enumerator e( RelationProcessorCore); auto i = e.current(); e.next() ) {
+        PrintMask(i->Processor.GroupMask[0].Mask);
+        printf("\n");        
+    }
+    for ( procinfo_enumerator e( RelationProcessorPackage); auto i = e.current(); e.next() ) {
+        printf("[");
+        for (UINT GroupIndex = 0; GroupIndex < i->Processor.GroupCount; GroupIndex++) {
+            PrintMask(i->Processor.GroupMask[GroupIndex].Mask);
+        }
+        printf(" ]\n");
+    }
+#if 0
     for ( SLPI entry : slpi) {
         topo_t item;
         switch ( entry.Relationship) {
@@ -94,7 +150,7 @@ std::vector< topo_t > cpu_topology() {
                 break;
         }
     }
-    
+#endif    
     return topo;
 }
 
