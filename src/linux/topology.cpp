@@ -130,8 +130,8 @@ std::vector< topo_t > cpu_topology() {
     }
     // iterate list of cpu IDs
     for ( uint32_t cpu_id : cpus_online) {
-        topo_t item;
-        item.cpu_id = cpu_id;
+        topo_t t;
+        t.cpu_id = cpu_id;
         fs::path cpu_path(
             boost::str(
                 boost::format("/sys/devices/system/cpu/cpu%d/") % cpu_id) );
@@ -140,30 +140,30 @@ std::vector< topo_t > cpu_topology() {
         directory_iterator e;
         for ( directory_iterator i( cpu_path, "^node([0-9]+)$");
               i != e; ++i) {
-            item.node_id = i->first;
+            t.node_id = i->first;
             // assigned to only one NUMA node
             break;
         }
-        // 3. which CPUs does cpu# share it's L2 cache with
+        // 3. which CPUs does cpu# share it's L1 cache with
+        fs::ifstream fs_l1( cpu_path / "cache/index1/shared_cpu_list");
+        std::getline( fs_l1, content);
+        t.l1_shared_with = ids_from_line( content);
+        // remove itself from shared L1 list
+        t.l1_shared_with.erase( cpu_id);
+        // 4. which CPUs does cpu# share it's L2 cache with
         fs::ifstream fs_l2( cpu_path / "cache/index2/shared_cpu_list");
         std::getline( fs_l2, content);
-        item.l2_shared_with = ids_from_line( content);
+        t.l2_shared_with = ids_from_line( content);
         // remove itself from shared L2 list
-        item.l2_shared_with.erase( cpu_id);
-        // 4. which CPUs does cpu# share it's L3 cache with
+        t.l2_shared_with.erase( cpu_id);
+        // 5. which CPUs does cpu# share it's L3 cache with
         fs::ifstream fs_l3( cpu_path / "cache/index3/shared_cpu_list");
         std::getline( fs_l3, content);
-        item.l3_shared_with = ids_from_line( content);
+        t.l3_shared_with = ids_from_line( content);
         // remove itself from shared L3 list
-        item.l3_shared_with.erase( cpu_id);
-        // 5. check if HT
-        fs::ifstream fs_ht( cpu_path / "topology/thread_siblings_list");
-        std::getline( fs_ht, content);
-        item.at_same_core = ids_from_line( content);
-        // remove itself from HT list
-        item.at_same_core.erase( cpu_id);
-        // store parsed item
-        topo.push_back( item);
+        t.l3_shared_with.erase( cpu_id);
+        // store parsed t
+        topo.push_back( t);
     }
     return topo;
 }

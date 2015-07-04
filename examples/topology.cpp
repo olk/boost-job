@@ -18,6 +18,11 @@ int main( int argc, char * argv[])
     for ( boost::jobs::topo_t topo : cpus) {
         std::cout << "NUMA node: " << topo.node_id << "\n";
         std::cout << "CPU ID: " << topo.cpu_id << "\n";
+        std::cout << "share L1 cache with: ";
+        for ( uint32_t cpu_id : topo.l1_shared_with) {
+            std::cout << cpu_id << " ";
+        }
+        std::cout << "\n";
         std::cout << "share L2 cache with: ";
         for ( uint32_t cpu_id : topo.l2_shared_with) {
             std::cout << cpu_id << " ";
@@ -27,12 +32,7 @@ int main( int argc, char * argv[])
         for ( uint32_t cpu_id : topo.l3_shared_with) {
             std::cout << cpu_id << " ";
         }
-        std::cout << "\n";
-        std::cout << "at the same core (HT): ";
-        for ( uint32_t cpu_id : topo.at_same_core) {
-            std::cout << cpu_id << " ";
-        }
-        std::cout << "\n";
+        std::cout << std::endl;
     }
 
     std::cout << "main: done" << std::endl;

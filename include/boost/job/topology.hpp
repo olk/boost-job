@@ -24,11 +24,11 @@ namespace boost {
 namespace jobs {
 
 struct topo_t {
-    uint32_t    node_id;
-    uint32_t    cpu_id;
-    std::set< uint32_t > l2_shared_with;
-    std::set< uint32_t > l3_shared_with;
-    std::set< uint32_t > at_same_core;
+    uint32_t                node_id;
+    uint32_t                cpu_id;
+    std::set< uint32_t >    l1_shared_with;
+    std::set< uint32_t >    l2_shared_with;
+    std::set< uint32_t >    l3_shared_with;
 };
 
 BOOST_JOBS_DECL

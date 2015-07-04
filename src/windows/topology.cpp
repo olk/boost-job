@@ -10,7 +10,8 @@ extern "C" {
 #include <windows.h>
 }
 
-#include <cstdio>
+#include <map>
+#include <set>
 #include <system_error>
 #include <vector>
 
@@ -40,18 +41,15 @@ public:
                     std::error_code( ::GetLastError(), std::system_category() ),
                     "::GetLogicalProcessorInformation() failed");
         }
-
-        base_ = reinterpret_cast< SLPLI * >( LocalAlloc( LMEM_FIXED, size) );
+        base_ = reinterpret_cast< SLPI * >( LocalAlloc( LMEM_FIXED, size) );
         if ( nullptr == base_) {
             throw std::bad_alloc();
         }
-
         if ( ! ::GetLogicalProcessorInformationEx( relship, base_, & size) ) {
             throw std::system_error(
                     std::error_code( ::GetLastError(), std::system_category() ),
                     "::GetLogicalProcessorInformation() failed");
         }
-
         current_ = base_;
         remaining_ = size;
     }
@@ -63,7 +61,7 @@ public:
     void next() {
         if ( nullptr != current_) {
             remaining_ -= current_->Size;
-            if ( nullptr != remaining_) {
+            if ( 0 != remaining_) {
                 current_ = reinterpret_cast< SLPI * >( reinterpret_cast< BYTE * >( current_) + current_->Size); 
             } else {
                 current_ = nullptr;
@@ -71,25 +69,24 @@ public:
         }
     }
 
-    SLPLI * current() {
+    SLPI * current() {
         return current_;
     }
 
 private:
-    SLPLI   *   base_;
-    SLPLI   *   current_;
+    SLPI    *   base_;
+    SLPI    *   current_;
     DWORD       remaining_;
 };
 
-void PrintMask(KAFFINITY Mask)
-{
- printf(" [");
- for (int i = 0; i < sizeof(Mask) * 8; i++) {
-  if (Mask & (static_cast<KAFFINITY>(1) << i)) {
-   printf(" %d", i);
-  }
- }
- printf(" ]");
+std::set< uint32_t > compute_cpu_set( uint32_t group_id, KAFFINITY mask) {
+	std::set< uint32_t > cpu_set;
+	for ( int i = 0; i < sizeof( mask) * 8; ++i) {
+  		if ( mask & ( static_cast< KAFFINITY >( 1) << i) ) {
+   			cpu_set.insert( 64 * group_id + i);
+  		}
+ 	}
+	return cpu_set;
 }
 
 }
@@ -97,60 +94,67 @@ void PrintMask(KAFFINITY Mask)
 namespace boost {
 namespace jobs {
 
-BOOST_JOBS_DECL
 std::vector< topo_t > cpu_topology() {
     std::vector< topo_t > topo;
+    std::map< uint32_t, topo_t > cpu_map;
 
-    for ( procinfo_enumerator e( RelationProcessorCore); auto i = e.current(); e.next() ) {
-        PrintMask(i->Processor.GroupMask[0].Mask);
-        printf("\n");        
-    }
-    for ( procinfo_enumerator e( RelationProcessorPackage); auto i = e.current(); e.next() ) {
-        printf("[");
-        for (UINT GroupIndex = 0; GroupIndex < i->Processor.GroupCount; GroupIndex++) {
-            PrintMask(i->Processor.GroupMask[GroupIndex].Mask);
+    for ( procinfo_enumerator e( RelationNumaNode); auto i = e.current(); e.next() ) {
+        uint32_t node_id = i->NumaNode.NodeNumber;
+        uint32_t group_id = i->NumaNode.GroupMask.Group;
+        std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->NumaNode.GroupMask.Mask);
+        for ( uint32_t cpu_id : cpu_set) {
+            topo_t t;
+            t.node_id = node_id;
+            t.cpu_id = cpu_id;
+            cpu_map[t.cpu_id] = t;
         }
-        printf(" ]\n");
     }
-#if 0
-    for ( SLPI entry : slpi) {
-        topo_t item;
-        switch ( entry.Relationship) {
-            case RelationNumaNode:
-                std::cerr << "NUMA node : " << entry.NumaNode.NodeNumber << std::endl;
-//                item.node_id = entry.NumaNode.NodeNumber;
-                break;
-
-            case RelationGroup:
-//                item.group_id =
-//                entry.Group.ActiveGroupCount // number of active groups obn the system
-//                entry.Group.GroupInfo // array of active groups
-//                entry.Group.GroupInfo[].ActiveProcessormask // bitmask of active processors:wa
-                break;
-
-            case RelationProcessorCore:
-//                item.cpu_id = 
-//                entry.Processor.GroupCount // number of entries in entrxy.Processor.GroupMask array
-//                entry.Processor.GroupMask.Mask // bitmap for zero or more processors
-//                item.group_id = entry.Processor.GroupMask.Group; // processor group number
-                break;
-
-            case RelationCache:
-                PCACHE_DESCRIPTOR Cache = & entry.Cache;
-                if ( 2 == Cache->Level) {
-//                    item.l2_shared_with = Cache->GroupMask;
+ 
+    for ( procinfo_enumerator e( RelationCache); auto i = e.current(); e.next() ) {
+        if ( CacheUnified != i->Cache.Type && CacheData != i->Cache.Type) {
+            // ignore non-data caches
+            continue;
+        }
+        uint32_t group_id = i->Cache.GroupMask.Group;
+        switch ( i->Cache.Level) {
+            case 1:
+                {
+                    // L1 cache
+                    std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->Cache.GroupMask.Mask);
+                    for ( uint32_t cpu_id : cpu_set) {
+                        cpu_map[cpu_id].l1_shared_with = cpu_set;
+                        // remove itself from shared L1 list
+                        cpu_map[cpu_id].l1_shared_with.erase( cpu_id);
+                    }
+                    break;
                 }
-                else if (3 == Cache->Level) {
-//                    item.l3_shared_with = Cache->GroupMask.Mask;
-//                    item.l3_shared_with = Cache->GroupMask.Group;
+            case 2:
+                {
+                    // L2 cache
+                    std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->Cache.GroupMask.Mask);
+                    for ( uint32_t cpu_id : cpu_set) {
+                        cpu_map[cpu_id].l2_shared_with = cpu_set;
+                        // remove itself from shared L2 list
+                        cpu_map[cpu_id].l2_shared_with.erase( cpu_id);
+                    }
+                    break;
                 }
-                break;
-
+            case 3:
+                {
+                    // L3 cache
+                    std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->Cache.GroupMask.Mask);
+                    for ( uint32_t cpu_id : cpu_set) {
+                        cpu_map[cpu_id].l3_shared_with = cpu_set;
+                        // remove itself from shared L3 list
+                        cpu_map[cpu_id].l3_shared_with.erase( cpu_id);
+                    }
+                    break;
+                }
             default:
-                break;
+                break;	
         }
     }
-#endif    
+
     return topo;
 }
 

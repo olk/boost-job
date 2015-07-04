@@ -21,10 +21,18 @@ namespace jobs {
 
 BOOST_JOBS_DECL
 void pin_thread( std::thread::native_handle_type hndl, uint32_t cpuid) {
-    if ( 0 == ::SetThreadAffinityMask( hndl, ( DWORD_PTR) 1 << cpuid) )
+    GROUP_AFFINITY affinity;
+    // compute processor group
+    // a group contains max 64 logical CPUs
+    affinity.Group = cpuid / 64;
+    // compute the ID of the logical CPU in the group
+    uint32_t id = cpuid % 64 + 1; 
+    // set the bit mask of the logical CPU
+    affinity.Mask = static_cast< KAFFINITY >( 1) << id;
+    if ( 0 == ::SetGroupAffinity( hndl, affinity, nullptr);
         throw std::system_error(
                 std::error_code( ::GetLastError(), std::system_category() ),
-                "::SetThreadAffinityMask() failed");
+                "::SetGroupAffinity() failed");
 }
 
 BOOST_JOBS_DECL
