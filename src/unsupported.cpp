@@ -4,4 +4,4 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#error "topology not supported for this platform"
+#error "this platform is not supported"

@@ -28,38 +28,51 @@ project boost/job
     ;
 
 
-alias pin_sources
-    : windows/pin.cpp
-    : <target-os>windows
+alias sources
+    : aix/pin.cpp
+      aix/topology.cpp
+    : <target-os>aix
     ;
 
-alias pin_sources
-    : posix/pin.cpp
+alias sources
+    : freebsd/pin.cpp
+      freebsd/topology.cpp
+    : <target-os>freebsd
     ;
 
-explicit pin_sources ;
-
-
-alias topology_sources
-    : windows/topology.cpp
-    : <target-os>windows
+alias sources
+    : hpux/pin.cpp
+      hpux/topology.cpp
+    : <target-os>hpux
     ;
 
-alias topology_sources
-    : linux/topology.cpp
+alias sources
+    : linux/pin.cpp
+      linux/topology.cpp
     : <target-os>linux
     ;
 
-alias topology_sources
-    : topology_unsuported.cpp
+alias sources
+    : solaris/pin.cpp
+      solaris/topology.cpp
+    : <target-os>solaris
     ;
 
-explicit topology_sources ;
+alias sources
+    : windows/pin.cpp
+      windows/topology.cpp
+    : <target-os>windows
+    ;
+
+alias sources
+    : unsuported.cpp
+    ;
+
+explicit sources ;
 
 
 lib boost_job
-    : pin_sources
-      topology_sources
+    : sources
       detail/rendezvous.cpp
       detail/worker_thread.cpp
       scheduler.cpp

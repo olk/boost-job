@@ -7,7 +7,8 @@
 #include "boost/job/pin.hpp"
 
 extern "C" {
-#include <pthread.h>
+#include <errno.h>
+#include <pthread_np.h>
 #include <sched.h>
 }
 
@@ -21,22 +22,23 @@ namespace boost {
 namespace jobs {
 
 BOOST_JOBS_DECL
-void pin_thread( std::thread::native_handle_type hndl, uint32_t cpuid) {
-    cpu_set_t cpuset;
-    CPU_ZERO( & cpuset);
-    CPU_SET( cpuid, & cpuset);
-
+void pin_thread( uint32_t cpuid) {
+    cpuset_t * set = ::cpuset_create();
+    if ( nullptr == set) {
+        throw std::system_error(
+                std::error_code( errno, std::system_category() ),
+                "::cpuset_create() failed");
+    }
+    ::cpuset_zero( set);
+    ::cpuset_set( cpuid, set);
     int err = 0;
-    if ( 0 != ( err = ::pthread_setaffinity_np( hndl, sizeof( cpuset), & cpuset) ) ) {
+    if ( 0 != ( err = ::pthread_setaffinity_np( ::pthread_self(), ::cpuset_size( set), set) ) ) {
+        ::cpuset_destroy( set);
         throw std::system_error(
                 std::error_code( err, std::system_category() ),
                 "pthread_setaffinity_np() failed");
     }
-}
-
-BOOST_JOBS_DECL
-void pin_thread( uint32_t cpuid) {
-    pin_thread( ::pthread_self(),  cpuid);
+    ::cpuset_destroy( set);
 }
 
 }}

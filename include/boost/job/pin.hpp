@@ -22,8 +22,6 @@ namespace boost {
 namespace jobs {
 
 BOOST_JOBS_DECL
-void pin_thread( std::thread::native_handle_type, uint32_t);
-BOOST_JOBS_DECL
 void pin_thread( uint32_t);
 
 }}

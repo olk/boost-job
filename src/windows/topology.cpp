@@ -96,8 +96,8 @@ namespace jobs {
 
 std::vector< topo_t > cpu_topology() {
     std::vector< topo_t > topo;
-    std::map< uint32_t, topo_t > cpu_map;
 
+    std::map< uint32_t, topo_t > cpu_map;
     for ( procinfo_enumerator e( RelationNumaNode); auto i = e.current(); e.next() ) {
         uint32_t node_id = i->NumaNode.NodeNumber;
         uint32_t group_id = i->NumaNode.GroupMask.Group;
