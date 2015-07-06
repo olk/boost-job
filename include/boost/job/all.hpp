@@ -8,6 +8,7 @@
 #define BOOST_JOBS_ALL_H
 
 #include <boost/job/dynamic_pool.hpp>
+#include <boost/job/memory.hpp>
 #include <boost/job/operation.hpp>
 #include <boost/job/pin.hpp>
 #include <boost/job/scheduler.hpp>

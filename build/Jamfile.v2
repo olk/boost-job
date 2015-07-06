@@ -47,7 +47,8 @@ alias sources
     ;
 
 alias sources
-    : linux/pin.cpp
+    : linux/memory.cpp
+      linux/pin.cpp
       linux/topology.cpp
     : <target-os>linux
     ;
@@ -59,7 +60,8 @@ alias sources
     ;
 
 alias sources
-    : windows/pin.cpp
+    : windows/memory.cpp
+      windows/pin.cpp
       windows/topology.cpp
     : <target-os>windows
     ;

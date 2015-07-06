@@ -55,7 +55,7 @@ public:
                 + 1) {
         // only for given CPUs allocate worker threads
         for ( topo_t & topo : topology_) {
-            worker_threads_[topo.cpu_id] = new  detail::worker_thread( topo, std::forward< FiberPool >( pool), salloc);
+            worker_threads_[topo.cpu_id] = detail::worker_thread::create( topo, std::forward< FiberPool >( pool), salloc);
         }
     }
 

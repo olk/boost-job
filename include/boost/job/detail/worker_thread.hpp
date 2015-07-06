@@ -28,6 +28,7 @@
 #include <boost/job/detail/queue.hpp>
 #include <boost/job/detail/rendezvous.hpp>
 #include <boost/job/detail/work.hpp>
+#include <boost/job/memory.hpp>
 #include <boost/job/pin.hpp>
 #include <boost/job/topology.hpp>
 
@@ -65,16 +66,6 @@ private:
                 std::forward< FiberPool >( pool), salloc, & shtdwn_, & queue_, & ntfy_).join();
     }
 
-public:
-    typedef intrusive_ptr< worker_thread >  ptr_t;
-
-    static worker_thread * instance() noexcept {
-        BOOST_ASSERT( nullptr != instance_);
-        return instance_;
-    }
-
-    worker_thread();
-
     template< typename FiberPool, typename StackAllocator >
     worker_thread( topo_t const& topology, FiberPool && pool, StackAllocator salloc) :
         use_count_( 0),
@@ -83,6 +74,21 @@ public:
         topology_( topology),
         queue_(),
         thrd_( & worker_thread::worker_fn_< FiberPool, StackAllocator >, this, std::forward< FiberPool >( pool), salloc) {
+    }
+
+public:
+    typedef intrusive_ptr< worker_thread >  ptr_t;
+
+    static worker_thread * instance() noexcept {
+        BOOST_ASSERT( nullptr != instance_);
+        return instance_;
+    }
+
+    template< typename FiberPool, typename StackAllocator >
+    static ptr_t create( topo_t const& topology, FiberPool && pool, StackAllocator salloc) {
+        allocator< worker_thread > alloc( topology.node_id);
+        worker_thread * p = alloc.allocate( 1);
+        return ptr_t( new ( p) worker_thread( topology, std::forward< FiberPool >( pool), salloc) );
     }
 
     ~worker_thread();
@@ -115,7 +121,7 @@ public:
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_preempt( Fn && fn, Args && ... args) {
-        return submit_preempt( std::allocator_arg, std::allocator< work >(),
+        return submit_preempt( std::allocator_arg, allocator< work >( topology_.node_id),
                                std::forward< Fn >( fn), std::forward< Args >( args) ...);
     }
 
@@ -136,7 +142,7 @@ public:
     template< typename Fn, typename ... Args >
     fibers::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_coop( Fn && fn, Args && ... args) {
-        return submit_coop( std::allocator_arg, std::allocator< work >(),
+        return submit_coop( std::allocator_arg, allocator< work >( topology_.node_id),
                             std::forward< Fn >( fn), std::forward< Args >( args) ...);
     }
 
@@ -148,7 +154,9 @@ public:
         BOOST_ASSERT( nullptr != t);
 
         if ( 0 == --t->use_count_) {
-            delete t;
+            allocator< worker_thread > alloc( t->topology_.node_id);
+            t->~worker_thread();
+            alloc.deallocate( t, 1);
         }
     }
 };

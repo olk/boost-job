@@ -19,15 +19,6 @@ namespace detail {
 thread_local worker_thread *
 worker_thread::instance_ = nullptr;
 
-worker_thread::worker_thread() :
-    use_count_( 0),
-    shtdwn_( false),
-    ntfy_(),
-    topology_(),
-    queue_(),
-    thrd_() {
-}
-
 worker_thread::~worker_thread() {
     try {
         shutdown();
