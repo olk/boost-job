@@ -21,6 +21,7 @@
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/work.hpp>
 #include <boost/job/detail/worker_thread.hpp>
+#include <boost/job/numa_stack.hpp>
 #include <boost/job/stack.hpp>
 #include <boost/job/static_pool.hpp>
 #include <boost/job/topology.hpp>
@@ -59,8 +60,24 @@ public:
         }
     }
 
+    template< typename FiberPool >
+    scheduler( std::vector< topo_t > const& topology,
+               FiberPool && pool) :
+        topology_( topology),
+        // hold max(CPU-IDs)
+        worker_threads_( std::max_element(
+                    topology.begin(),
+                    topology.end(),
+                    [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
+                + 1) {
+        // only for given CPUs allocate worker threads
+        for ( topo_t & topo : topology_) {
+            worker_threads_[topo.cpu_id] = detail::worker_thread::create( topo, std::forward< FiberPool >( pool), numa_stack( topo.node_id) );
+        }
+    }
+
     scheduler( std::vector< topo_t > const& topology) :
-        scheduler( topology, static_pool< 64 >(), fixedsize_stack() ) {
+        scheduler( topology, static_pool< 64 >() ) {
     }
 
     scheduler( scheduler const&) = delete;
