@@ -23,22 +23,20 @@
 namespace boost {
 namespace jobs {
 
-#if defined(BOOST_JOBS_HAS_NUMA_ALLOC)
 BOOST_JOBS_DECL
 void * numa_alloc( std::size_t, uint32_t);
 
 BOOST_JOBS_DECL
 void numa_free( void *, std::size_t);
-#endif
 
 template< typename T >
-class allocator {
+class numa_allocator {
 private:
     uint32_t            node_id_;
 
 public:
     template< typename U >
-    friend class allocator;
+    friend class numa_allocator;
 
     // type definitions
     typedef T               value_type;
@@ -52,23 +50,23 @@ public:
     // rebind allocator to type U
     template< typename U >
     struct rebind {
-        typedef allocator< U >  other;
+        typedef numa_allocator< U >  other;
     };
 
-    allocator( uint32_t node_id) throw() :
+    numa_allocator( uint32_t node_id) throw() :
         node_id_( node_id) {
     }
 
-    allocator( allocator const& other) throw() :
+    numa_allocator( numa_allocator const& other) throw() :
         node_id_( other.node_id_) {
     }
 
     template< typename U >
-    allocator( allocator< U > const& other) throw() :
+    numa_allocator( numa_allocator< U > const& other) throw() :
         node_id_( other.node_id_) {
     }
 
-    ~allocator() = default;
+    ~numa_allocator() = default;
 
     // return address of values
     pointer address( reference value) const {
@@ -85,11 +83,7 @@ public:
 
     // allocate but don't initialize num elements of type T
     pointer allocate( size_type num, const void * = 0) {
-#if defined(BOOST_JOBS_HAS_NUMA_ALLOC)
         return ( pointer) numa_alloc( num * sizeof( T), node_id_);
-#else
-        return ( pointer)( ::operator new( num * sizeof( T) ) );
-#endif
     }
 
     // initialize elements of allocated storage p with value value
@@ -106,21 +100,17 @@ public:
 
     // deallocate storage p of deleted elements
     void deallocate( pointer p, size_type num) {
-#if defined(BOOST_JOBS_HAS_NUMA_ALLOC)
         numa_free( ( void * )p, num * sizeof( T) );
-#else
-        ::operator delete( ( void * )p);
-#endif
     }
 };
 
 // return that all specializations of this allocator are interchangeable
 template< typename T1, typename T2 >
-bool operator==( allocator< T1 > const& l, allocator< T2 > const& r) throw() {
+bool operator==( numa_allocator< T1 > const& l, numa_allocator< T2 > const& r) throw() {
     return l.node_id_ == r.node_id_;
 }
 template< typename T1, typename T2 >
-bool operator!=( allocator< T1 > const& l, allocator< T2 > const& r) throw() {
+bool operator!=( numa_allocator< T1 > const& l, numa_allocator< T2 > const& r) throw() {
     return l.node_id_ != r.node_id_;
 }
 

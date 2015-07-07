@@ -30,8 +30,8 @@ scheduler::~scheduler() {
 void
 scheduler::shutdown() {
     // shutdown worker threads
-    for ( topo_t & topo : topology_) {
-        worker_threads_[topo.cpu_id]->shutdown();
+    for ( auto p : topology_) {
+        worker_threads_[p.first]->shutdown();
     }
     worker_threads_.clear();
 }

@@ -35,20 +35,4 @@
 # include <boost/config/auto_link.hpp>
 #endif
 
-// support for memory allocation on NUMA node
-// Linux
-#if defined(__linux__)
-# include <linux/version.h>
-# if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,10)
-#  define BOOST_JOBS_HAS_NUMA_ALLOC 1
-# endif
-#endif
-// Windows
-#if defined(BOOST_WINDOWS)
-# include <windows.h>
-# if _WIN32_WINNT >= 0x0600 // Windows 7; Windows Server 2008
-#  define BOOST_JOBS_HAS_NUMA_ALLOC 1
-# endif
-#endif
-
 #endif // BOOST_JOBS_DETAIL_CONFIG_H

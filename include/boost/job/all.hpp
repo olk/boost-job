@@ -9,6 +9,7 @@
 
 #include <boost/job/dynamic_pool.hpp>
 #include <boost/job/memory.hpp>
+#include <boost/job/numa_fixedsize_stack.hpp>
 #include <boost/job/operation.hpp>
 #include <boost/job/pin.hpp>
 #include <boost/job/scheduler.hpp>

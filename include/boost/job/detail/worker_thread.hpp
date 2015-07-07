@@ -86,7 +86,7 @@ public:
 
     template< typename FiberPool, typename StackAllocator >
     static ptr_t create( topo_t const& topology, FiberPool && pool, StackAllocator salloc) {
-        allocator< worker_thread > alloc( topology.node_id);
+        numa_allocator< worker_thread > alloc( topology.node_id);
         worker_thread * p = alloc.allocate( 1);
         return ptr_t( new ( p) worker_thread( topology, std::forward< FiberPool >( pool), salloc) );
     }
@@ -121,7 +121,7 @@ public:
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_preempt( Fn && fn, Args && ... args) {
-        return submit_preempt( std::allocator_arg, allocator< work >( topology_.node_id),
+        return submit_preempt( std::allocator_arg, numa_allocator< work >( topology_.node_id),
                                std::forward< Fn >( fn), std::forward< Args >( args) ...);
     }
 
@@ -142,7 +142,7 @@ public:
     template< typename Fn, typename ... Args >
     fibers::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_coop( Fn && fn, Args && ... args) {
-        return submit_coop( std::allocator_arg, allocator< work >( topology_.node_id),
+        return submit_coop( std::allocator_arg, numa_allocator< work >( topology_.node_id),
                             std::forward< Fn >( fn), std::forward< Args >( args) ...);
     }
 
@@ -154,7 +154,7 @@ public:
         BOOST_ASSERT( nullptr != t);
 
         if ( 0 == --t->use_count_) {
-            allocator< worker_thread > alloc( t->topology_.node_id);
+            numa_allocator< worker_thread > alloc( t->topology_.node_id);
             t->~worker_thread();
             alloc.deallocate( t, 1);
         }

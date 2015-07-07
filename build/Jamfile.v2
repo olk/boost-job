@@ -29,19 +29,22 @@ project boost/job
 
 
 alias sources
-    : aix/pin.cpp
+    : memory.cpp
+      aix/pin.cpp
       aix/topology.cpp
     : <target-os>aix
     ;
 
 alias sources
-    : freebsd/pin.cpp
+    : memory.cpp
+      freebsd/pin.cpp
       freebsd/topology.cpp
     : <target-os>freebsd
     ;
 
 alias sources
-    : hpux/pin.cpp
+    : memory.cpp
+      hpux/pin.cpp
       hpux/topology.cpp
     : <target-os>hpux
     ;
@@ -54,7 +57,8 @@ alias sources
     ;
 
 alias sources
-    : solaris/pin.cpp
+    : memory.cpp
+      solaris/pin.cpp
       solaris/topology.cpp
     : <target-os>solaris
     ;

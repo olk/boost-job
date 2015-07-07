@@ -4,8 +4,8 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef BOOST_JOBS_NUMA_STACK_H
-#define BOOST_JOBS_NUMA_STACK_H
+#ifndef BOOST_JOBS_NUMA_FIXEDSIZE_STACK_H
+#define BOOST_JOBS_NUMA_FIXEDSIZE_STACK_H
 
 #include <cstddef>
 #include <cstdlib>
@@ -31,7 +31,7 @@ namespace boost {
 namespace jobs {
 
 template< typename traitsT >
-class basic_numa_stack {
+class basic_numa_fixedsize_stack {
 private:
     uint32_t        node_id_;
     std::size_t     size_;
@@ -39,7 +39,7 @@ private:
 public:
     typedef traitsT traits_type;
 
-    basic_numa_stack( uint32_t node_id, std::size_t size = traits_type::default_size() ) :
+    basic_numa_fixedsize_stack( uint32_t node_id, std::size_t size = traits_type::default_size() ) :
         node_id_( node_id),
         size_( size) {
         BOOST_ASSERT( traits_type::minimum_size() <= size_);
@@ -75,7 +75,7 @@ public:
     }
 };
 
-typedef basic_numa_stack< context::stack_traits >  numa_stack;
+typedef basic_numa_fixedsize_stack< context::stack_traits >  numa_fixedsize;
 
 }}
 
@@ -83,4 +83,4 @@ typedef basic_numa_stack< context::stack_traits >  numa_stack;
 #  include BOOST_ABI_SUFFIX
 #endif
 
-#endif // BOOST_JOBS_NUMA_STACK_H
+#endif // BOOST_JOBS_NUMA_FIXEDSIZE_STACK_H

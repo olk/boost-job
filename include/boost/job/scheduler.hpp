@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <functional>
 #include <future>
-#include <memory>
+#include <map>
 #include <type_traits> // std::result_of
 #include <utility> // std::forward()
 #include <vector>
@@ -21,7 +21,8 @@
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/work.hpp>
 #include <boost/job/detail/worker_thread.hpp>
-#include <boost/job/numa_stack.hpp>
+#include <boost/job/memory.hpp>
+#include <boost/job/numa_fixedsize_stack.hpp>
 #include <boost/job/stack.hpp>
 #include <boost/job/static_pool.hpp>
 #include <boost/job/topology.hpp>
@@ -35,8 +36,17 @@ namespace jobs {
 
 class BOOST_JOBS_DECL scheduler {
 private:
-    std::vector< topo_t >                       topology_;
+    std::map< uint32_t, topo_t >                topology_;
     std::vector< detail::worker_thread::ptr_t > worker_threads_;
+
+    static std::map< uint32_t, topo_t >
+    create_topology_map( std::vector< topo_t > const& topology) {
+        std::map< uint32_t, topo_t > map;
+        for ( auto t : topology) {
+            map[t.cpu_id] = t;
+        }
+        return map;
+    }
 
 public:
     scheduler();
@@ -47,32 +57,36 @@ public:
     scheduler( std::vector< topo_t > const& topology,
                FiberPool && pool,
                StackAllocator salloc) :
-        topology_( topology),
-        // hold max(CPU-IDs)
+        topology_( create_topology_map( topology) ),
+        // hold max(CPU-IDs) worker threads
         worker_threads_( std::max_element(
                     topology.begin(),
                     topology.end(),
                     [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
                 + 1) {
+        BOOST_ASSERT( topology.size() == topology_.size() );
         // only for given CPUs allocate worker threads
-        for ( topo_t & topo : topology_) {
-            worker_threads_[topo.cpu_id] = detail::worker_thread::create( topo, std::forward< FiberPool >( pool), salloc);
+        for ( auto t : topology) {
+            worker_threads_[t.cpu_id] = detail::worker_thread::create(
+                    t, std::forward< FiberPool >( pool), salloc);
         }
     }
 
     template< typename FiberPool >
     scheduler( std::vector< topo_t > const& topology,
                FiberPool && pool) :
-        topology_( topology),
+        topology_( create_topology_map( topology) ),
         // hold max(CPU-IDs)
         worker_threads_( std::max_element(
                     topology.begin(),
                     topology.end(),
                     [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
                 + 1) {
+        BOOST_ASSERT( topology.size() == topology_.size() );
         // only for given CPUs allocate worker threads
-        for ( topo_t & topo : topology_) {
-            worker_threads_[topo.cpu_id] = detail::worker_thread::create( topo, std::forward< FiberPool >( pool), numa_stack( topo.node_id) );
+        for ( auto t : topology) {
+            worker_threads_[t.cpu_id] = detail::worker_thread::create(
+                    t, std::forward< FiberPool >( pool), numa_fixedsize( t.node_id) );
         }
     }
 
@@ -96,8 +110,12 @@ public:
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args) {
-        return submit_preempt( std::allocator_arg, std::allocator< detail::work >(), cpuid,
-                               std::forward< Fn >( fn), std::forward< Args >( args) ...);
+        return submit_preempt( std::allocator_arg,
+                               numa_allocator< detail::work >(
+                                   topology_[cpuid].node_id),
+                               cpuid,
+                               std::forward< Fn >( fn),
+                               std::forward< Args >( args) ...);
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
@@ -112,8 +130,12 @@ public:
     template< typename Fn, typename ... Args >
     fibers::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_coop( uint32_t cpuid, Fn && fn, Args && ... args) {
-        return submit_coop( std::allocator_arg, std::allocator< detail::work >(), cpuid,
-                            std::forward< Fn >( fn), std::forward< Args >( args) ...);
+        return submit_coop( std::allocator_arg,
+                            numa_allocator< detail::work >(
+                                topology_[cpuid].node_id),
+                            cpuid,
+                            std::forward< Fn >( fn),
+                            std::forward< Args >( args) ...);
     }
 
     void shutdown();
