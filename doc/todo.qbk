@@ -8,6 +8,5 @@
 [section:todo TODO]
 
     * custom fiber scheduling algorithm per worker thread
-    * allocated memory on NUMA node (-> for operator new)
 
 [endsect]
