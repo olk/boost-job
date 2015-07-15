@@ -13,6 +13,7 @@
 #include <boost/context/segmented_stack.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/numa_fixedsize_stack.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX

@@ -25,11 +25,11 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/pin.hpp>
 #include <boost/job/detail/queue.hpp>
 #include <boost/job/detail/rendezvous.hpp>
 #include <boost/job/detail/work.hpp>
 #include <boost/job/memory.hpp>
-#include <boost/job/pin.hpp>
 #include <boost/job/topology.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS

@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          http://www.boost.org/LICENSE_1_0.txt)
 
-#include "boost/job/pin.hpp"
+#include "boost/job/detail/pin.hpp"
 
 extern "C" {
 #include <sys/pthread.h>
@@ -18,6 +18,7 @@ extern "C" {
 
 namespace boost {
 namespace jobs {
+namespace detail {
 
 BOOST_JOBS_DECL
 void pin_thread( uint32_t cpuid) {
@@ -33,7 +34,7 @@ void pin_thread( uint32_t cpuid) {
     }
 }
 
-}}
+}}}
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_SUFFIX
