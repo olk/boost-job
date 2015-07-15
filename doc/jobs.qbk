@@ -10,7 +10,7 @@
     [authors [Kowalke, Oliver]]
     [copyright 2015 Oliver Kowalke]
     [id job]
-    [purpose C++ Library to cooperatively schedule and synchronize micro-threads]
+    [purpose C++ Library schedule jobs on CPUs]
     [category text]
     [license
         Distributed under the Boost Software License, Version 1.0.
@@ -20,8 +20,8 @@
 ]
 
 
-[def __boost_context__ [@boost:/libs/context/index.html Boost.Context]]
 [def __boost_fiber__ [*Boost.Fiber]]
+[def __boost_job__ [*Boost.Job]]
 
 [template class_heading[class_name]
 [hding class_[class_name]..Class [`[class_name]]]
@@ -50,7 +50,7 @@
 
 [template static_member_heading[class_name method_name]
 [hding [class_name]_[method_name]..Static member function [`[method_name]]()]
-numa
+]
 [template static_member_link[class_name method_name] [member_link [class_name]..[method_name]]]
 
 [template function_heading[function_name]
@@ -73,11 +73,23 @@ numa
 [template dblink[id text] '''<link linkend="'''[id]'''">'''[text]'''</link>''']
 [template `[text] '''<code>'''[text]'''</code>''']
 
+[def __cpu_topology__ [function_link cpu_topology]]
+[def __dpool__ [template_link dynamic_pool]]
+[def __fixedsize_stack__ [class_link fixedsize_stack]]
+[def __nfixedsize_stack__ [class_link numa_fixedsize_stack]]
+[def __numa_allocator__ [template_link numa_allocator]]
+[def __numa_alloc__ [function_link numa_alloc]]
+[def __numa_free__ [function_link numa_free]]
+[def __pfixedsize_stack__ [class_link protected_fixedsize_stack]]
+[def __sched_csubmit__ [member_link scheduler..submit_coop]]
+[def __sched_psubmit__ [member_link scheduler..submit_preempt]]
+[def __sched_shutdown__ [member_link scheduler..shutdown]]
 [def __scheduler__ [class_link scheduler]]
-[def __psubmit__ `submit_preempt()`]
-[def __csubmit__ `submit_coop()`]
-[def __scheduler_psubmit__ [member_link scheudler..psubmit]]
-[def __scheduler_csubmit__ [member_link scheudler..csubmit]]
+[def __segmented_stack__ [class_link segmented_stack]]
+[def __spool__ [template_link static_pool]]
+[def __submit__ [ns_function_link this_worker..submit]]
+[def __topo__ [class_link topo_t]]
+[def __topology__ [ns_function_link this_worker..topology]]
 
 [include overview.qbk]
 [include job.qbk]
@@ -86,4 +98,3 @@ numa
 [include rational.qbk]
 [include customization.qbk]
 [include todo.qbk]
-[include acknowledgements.qbk]
