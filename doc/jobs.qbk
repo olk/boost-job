@@ -92,9 +92,10 @@
 [def __topology__ [ns_function_link this_worker..topology]]
 
 [include overview.qbk]
-[include job.qbk]
-[include scheduling.qbk]
+[include topology.qbk]
+[include scheduler.qbk]
+[include stacks.qbk]
+[include pools.qbk]
 [include numa.qbk]
 [include rational.qbk]
-[include customization.qbk]
 [include todo.qbk]
