@@ -14,10 +14,10 @@
 
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
+#include <boost/context/detail/invoke.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <boost/job/detail/config.hpp>
-#include <boost/job/detail/invoke.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -92,35 +92,20 @@ private:
 };
 
 template< typename Allocator, typename Fn >
-work * create_wrapped_work_( Allocator a, Fn && fn) {
+work * create_work_( Allocator a, Fn && fn) {
     typename wrapped_work< Allocator, Fn >::allocator_t alloc( a);
     work * pw = alloc.allocate( 1);
     return new ( pw) wrapped_work< Allocator, Fn >( alloc, std::forward< Fn >( fn) );
 }
 
-template< typename Allocator, typename Fn, typename Tpl, std::size_t ... I >
-static work * create_work_( Allocator alloc, Fn && fn_, Tpl && tpl_, std::index_sequence< I ... >) {
-    return create_wrapped_work_(
-            alloc,
-            [fn=std::forward< Fn >( fn_),tpl=std::forward< Tpl >( tpl_)] () mutable -> decltype( auto) {
-                invoke( fn,
-                    // non-type template parameter pack used to extract the
-                    // parameters (arguments) from the tuple and pass them to fn
-                    // via parameter pack expansion
-                    // std::tuple_element<> does not perfect forwarding
-                    std::forward< decltype( std::get< I >( std::declval< Tpl >() ) ) >(
-                        std::get< I >( std::forward< Tpl >( tpl) ) ) ... );
-            });
-}
-
 template< typename Allocator, typename Fn, typename ... Args >
 work::ptr_t create_work( Allocator alloc, Fn && fn, Args && ... args) {
     return work::ptr_t(
-                create_work_(
-                    alloc,
-                    std::forward< Fn >( fn),
-                    std::make_tuple( std::forward< Args >( args) ... ),
-                    std::index_sequence_for< Args ... >() ) );
+        create_work_(
+            alloc,
+            [fn=std::forward< Fn >( fn),tpl=std::make_tuple( std::forward< Args >( args) ...)] () mutable -> decltype( auto) {
+                context::detail::invoke_helper( std::move( fn), std::move( tpl) );
+            }) );
 }
 
 }}}

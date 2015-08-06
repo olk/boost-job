@@ -99,7 +99,7 @@ public:
     scheduler & operator=( scheduler const&) = delete;
 
     template< typename Allocator, typename Fn, typename ... Args >
-    std::future< typename std::result_of< Fn( Args ... ) >::type >
+    std::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_preempt( std::allocator_arg_t, Allocator alloc,
                     uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_preempt(
@@ -108,7 +108,7 @@ public:
     }
 
     template< typename Fn, typename ... Args >
-    std::future< typename std::result_of< Fn( Args ... ) >::type >
+    std::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args) {
         return submit_preempt( std::allocator_arg,
                                numa_allocator< detail::work >(
@@ -119,16 +119,16 @@ public:
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
-    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    fibers::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_coop( std::allocator_arg_t, Allocator alloc,
-                uint32_t cpuid, Fn && fn, Args && ... args) {
+                 uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_coop(
             std::allocator_arg, alloc,
             std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
     template< typename Fn, typename ... Args >
-    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    fibers::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_coop( uint32_t cpuid, Fn && fn, Args && ... args) {
         return submit_coop( std::allocator_arg,
                             numa_allocator< detail::work >(
