@@ -7,4 +7,54 @@
 
 [section:pools Pools]
 
+[heading Synopsis]
+
+    #include <boost/job/all.hpp>
+
+    namespace boost {
+    namespace jobs {
+
+    template< std::size_t N >
+    struct static_pool;
+
+    template< std::size_t Min, std::size_t Max, std::size_t N = 1 >
+    class dynamic_pool;
+
+    }}
+
+[#class_static_pool]
+[section:static_pool Class `static_pool`]
+
+    #include <boost/job/static_pool.hpp>
+
+    template< std::size_t N >
+    struct static_pool {
+        static_pool() = default;
+
+        template< typename StackAllocator >
+        void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
+                         detail::queue * q, detail::rendezvous * ntfy);
+    };
+
+[endsect] [/ section Class static_pool]
+
+
+[#class_dynamic_pool]
+[section:dynamic_pool Class `dynamic_pool`]
+
+    #include <boost/job/dynamic_pool.hpp>
+
+    template< std::size_t Min, std::size_t Max, std::size_t N = 1 >
+    class dynamic_pool {
+    public:
+        dynamic_pool() = default;
+
+        template< typename StackAllocator >
+        void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
+                         detail::queue * q, detail::rendezvous * ntfy);
+    };
+
+[endsect] [/ section Class dynamic_pool]
+
+
 [endsect]

@@ -7,4 +7,28 @@
 
 [section:rational Rational]
 
+[heading tested compilers]
+
+The library was tested with GCC-5.1.1, Clang-3.6.0 and MSVC-14.0 in c++14-mode.
+
+
+[heading supported architectures]
+
+__boost_fiber__ depends on __boost_context__ - the list of supported architectures
+can be found [@boost:/libs/context/doc/html/context/architectures.html here].
+
+
+[heading NUMA support]
+
+[table NUMA support
+    [[OS]       [CPU topology]  [memory allocation on NUMA node]  [pin thread to logical CPU]]
+    [[Linux]    [+]             [+]                               [+]]
+    [[Windows]  [+]             [+]                               [+]]
+    [[AIX]      [+]             [-[footnote incomplete/not yet implemented]]                               [+]]
+    [[HP/UX]    [+]             [-[footnote incomplete/not yet implemented]]                               [+]]
+    [[Solaris]  [+]             [-[footnote incomplete/not yet implemented]]                               [+]]
+    [[FreeBSD]  [+]             [-[footnote kernel developers have not yet finished NUMA support]                               [+]]
+    [[MacOS X]  [-]             [-]                               [-]]
+]
+
 [endsect]

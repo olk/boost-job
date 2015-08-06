@@ -20,6 +20,8 @@
 ]
 
 
+[def __boost_asio__ [@boost:/libs/asio/index.html Boost.Asio]]
+[def __boost_context__ [@boost:/libs/context/index.html Boost.Context]]
 [def __boost_fiber__ [*Boost.Fiber]]
 [def __boost_job__ [*Boost.Job]]
 
@@ -86,15 +88,20 @@
 [def __sched_shutdown__ [member_link scheduler..shutdown]]
 [def __scheduler__ [class_link scheduler]]
 [def __segmented_stack__ [class_link segmented_stack]]
+[def __segmented_stack_stack__ ['segmented_stack-stack]]
 [def __spool__ [template_link static_pool]]
+[def __stack_allocator_concept__ [link stack_allocator_concept ['stack-allocator concept]]]
+[def __stack_allocator__ ['stack_allocator]]
+[def __stack_context__ [@boost:/libs/context/doc/html/context/stack/stack_context.html `stack_context`]]
 [def __submit__ [ns_function_link this_worker..submit]]
 [def __topo__ [class_link topo_t]]
 [def __topology__ [ns_function_link this_worker..topology]]
 
 [include overview.qbk]
+[include job.qbk]
 [include topology.qbk]
 [include scheduler.qbk]
-[include stacks.qbk]
+[include stack.qbk]
 [include pools.qbk]
 [include numa.qbk]
 [include rational.qbk]

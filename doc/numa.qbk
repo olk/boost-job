@@ -7,4 +7,76 @@
 
 [section:numa NUMA]
 
+[heading Synopsis]
+
+    #include <boost/job/all.hpp>
+
+    namespace boost {
+    namespace jobs {
+
+    void * numa_alloc( std::size_t, uint32_t);
+
+    void numa_free( void *, std::size_t);
+
+    template< typename T >
+    class numa_allocator;
+
+    }}
+
+[#class_numa_allocator]
+[section:numa_allocator Class `numa_allocator`]
+
+    #include <boost/job/memory.hpp>
+
+    template< typename T >
+    class numa_allocator {
+    public:
+        // type definitions
+        typedef T               value_type;
+        typedef T           *   pointer;
+        typedef T       const*  const_pointer;
+        typedef T           &   reference;
+        typedef T       const&  const_reference;
+        typedef std::size_t     size_type;
+        typedef std::ptrdiff_t  difference_type;
+
+        // rebind allocator to type U
+        template< typename U >
+        struct rebind;
+
+        numa_allocator( uint32_t node_id) throw();
+
+        numa_allocator( numa_allocator const& other) throw();
+
+        template< typename U >
+        numa_allocator( numa_allocator< U > const& other) throw();
+
+        ~numa_allocator() = default;
+
+        pointer address( reference value) const;
+        const_pointer address( const_reference value) const;
+
+        size_type max_size() const throw();
+
+        pointer allocate( size_type num, const void * = 0);
+
+        void construct( pointer p, T const& value);
+
+        void destroy( pointer p);
+
+        void deallocate( pointer p, size_type num);
+    };
+
+    template< typename T1, typename T2 >
+    bool operator==( numa_allocator< T1 > const& l, numa_allocator< T2 > const& r) throw();
+
+    template< typename T1, typename T2 >
+    bool operator!=( numa_allocator< T1 > const& l, numa_allocator< T2 > const& r) throw();
+
+    void * numa_alloc( std::size_t, uint32_t);
+
+    void numa_free( void *, std::size_t);
+
+[endsect] [/ section Class numa_allocator]
+
 [endsect]

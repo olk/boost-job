@@ -7,4 +7,90 @@
 
 [section:topology Topology]
 
+[heading Synopsis]
+
+    #include <boost/job/all.hpp>
+
+    namespace boost {
+    namespace jobs {
+
+    struct topo_t {
+        uint32_t                node_id;
+        uint32_t                cpu_id;
+        std::set< uint32_t >    l1_shared_with;
+        std::set< uint32_t >    l2_shared_with;
+        std::set< uint32_t >    l3_shared_with;
+    };
+
+    std::vector< topo_t > cpu_topology();
+
+    namespace this_worker {
+
+    topo_t topology() noexcept;
+
+    }}}
+
+__boost_job__ provides function __cpu_topology__ to inspect which logical CPUs
+are online. The returned structure contains the ID of logical CPU [footnote On
+Windows] are online, the ID of the NUMA node to which the logical CPU belongs
+and with which other logical CPUs L1/L2/L3 cache is shared [footnore not all
+platforms supported].
+This information is used internally to pin worker threads to logical CPUs and
+which logical CPU is aprobriate for a job (memory latency).
+
+[#class_topo_t]
+[section:topo_t Class `topo_t`]
+
+    #include <boost/job/topology.hpp>
+
+    namespace boost {
+    namespace jobs {
+
+    struct topo_t {
+        uint32_t                node_id;
+        uint32_t                cpu_id;
+        std::set< uint32_t >    l1_shared_with;
+        std::set< uint32_t >    l2_shared_with;
+        std::set< uint32_t >    l3_shared_with;
+    };
+
+    std::vector< topo_t > cpu_topology();
+
+    }}
+
+[function_heading cpu_topology]
+
+    std::vector< topo_t > cpu_topology();
+
+[variablelist
+[[Returns:] []]
+[[Throws:] []]
+]
+
+[endsect] [/ section Class topo_t]
+
+[section:this_worker Namespace this_worker]
+
+    namespace boost {
+    namespace jobs {
+    namespace this_worker {
+
+    topo_t topology() noexcept;
+
+    }}}
+
+[ns_function_heading this_worker..topology()]
+
+    #include <boost/job/operations.hpp>
+
+    topo_t topology() noexcept;
+
+[variablelist
+[[Returns:] []]
+[[Throws:] [Nothing.]]
+]
+
+[endsect] [/ section Namespace this_worker]
+
+
 [endsect]

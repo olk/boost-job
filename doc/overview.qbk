@@ -9,21 +9,21 @@
 
 __boost_job__  provides a framework for asynchronous execution of job-graphs 
 [footnote A job is a small unit of code that can be executed independently and
-parallel, e.g. fain-grained work item] of arbitrary dependency, e.g. solving the
-many-dependends-jobs problem (amount of jobs waiting for other jobs >> amount of
-threads).
+parallel, e.g. it's a fain-grained work item] of arbitrary dependency, e.g.
+solving the many-dependends-jobs problem (amount of jobs waiting for other jobs
+>> amount of threads).
 
 Each (logical) CPU of a dedicated CPU set (configurable) gets a worker-thread
-assigned. Each worker-thread runs a (customizable) fiber-pool. A submitted job
-is always executed by a worker-fiber. By using __boost_fiber__ jobs are
-scheduled cooperativly so that a job can yield to other jobs during its
-execution. Jobs can be syncrhonized via primitives like conditions, barriers and
-channels (message exchange) from __boost_fiber__ without blocking worker-thread.
-Fibers provide a fast context switch.
+assigned. Each worker-thread runs a fiber-pool (launch policy is customizable).
+A submitted job is always executed by a worker-fiber. By using __boost_fiber__
+jobs are scheduled cooperativly so that a job can yield to other jobs during its
+execution. Jobs can be synchronized via primitives like mutex's, conditions,
+barriers and channels (message exchange) from __boost_fiber__ without blocking
+worker-thread. Fibers provide a fast context switch.
 
 __boost_job__ supports to inspect the NUMA topology (e.g. which logical CPUs are
 online, and which CPUs share L1/L2/L3 cache etc.). This information can be used
-select a aprobriate CPU for a job.
+to select a aprobriate CPU for a job.
 For a fast access to job related data, __boost_job__ provides functions and
 classes to allocate memory on NUMA nodes [footnote CPUs of a NUMA node share
 cache and have a faster access to its associated memory bank than CPUs of other
