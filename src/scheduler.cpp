@@ -14,9 +14,8 @@
 
 namespace boost {
 namespace jobs {
-}
 
-scheduler::~scheduler() {
+scheduler::~scheduler() noexcept {
     try {
         shutdown();
     } catch ( ... ) {
