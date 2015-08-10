@@ -14,10 +14,6 @@
 
 namespace boost {
 namespace jobs {
-
-scheduler::scheduler() :
-    topology_(),
-    worker_threads_() {
 }
 
 scheduler::~scheduler() {

@@ -49,10 +49,6 @@ private:
     }
 
 public:
-    scheduler();
-
-    ~scheduler();
-
     template< typename FiberPool, typename StackAllocator >
     scheduler( std::vector< topo_t > const& topology,
                FiberPool && pool,
@@ -93,6 +89,8 @@ public:
     scheduler( std::vector< topo_t > const& topology) :
         scheduler( topology, static_pool< 64 >() ) {
     }
+
+    ~scheduler() noexcept;
 
     scheduler( scheduler const&) = delete;
 
