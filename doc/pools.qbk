@@ -85,7 +85,7 @@ Before this function returns all worker-fibers are interrupted and joined.]]
 
 [variablelist
 [[Effects:] [Creates `Min` worker-fibers and connects them with the job queue
-of the worker-thread. If job queue is not empty and no worker-fibers are ready
+of the worker-thread. If job queue is not empty or no worker-fibers are ready
 to run, a new worker-fiber is spawned until `Max` worker-fibers are running.
 A worker.fiber gets removed (destroyed) if the job-queue is empty,
 worker-fibers are ready to run and more than `Min` worker-fibers are running.
