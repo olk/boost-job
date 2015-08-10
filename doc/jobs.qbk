@@ -77,6 +77,7 @@
 
 [def __cpu_topology__ [function_link cpu_topology]]
 [def __dpool__ [template_link dynamic_pool]]
+[def __econtext__ [@boost:/libs/context/doc/html/context/econtext.html `execution_context`]]
 [def __fixedsize_stack__ [class_link fixedsize_stack]]
 [def __nfixedsize_stack__ [class_link numa_fixedsize_stack]]
 [def __numa_allocator__ [template_link numa_allocator]]
@@ -100,7 +101,6 @@
 [include overview.qbk]
 [include job.qbk]
 [include topology.qbk]
-[include scheduler.qbk]
 [include stack.qbk]
 [include pools.qbk]
 [include numa.qbk]

@@ -8,7 +8,8 @@
 [#stack]
 [section:stack Stack allocation]
 
-A fiber uses internally a __econtext__ which manages a set of registers and a stack.
+A worker-fiber uses internally a __econtext__ which manages a set of registers
+and a stack.
 The memory used by the stack is allocated/deallocated via a __stack_allocator__
 which is required to model a __stack_allocator_concept__.
 
@@ -47,11 +48,12 @@ undefined behaviour.]
 [note The memory for the stack is not required to be aligned; alignment takes
 place inside __econtext__.]
 
-See also [@boost:/libs/context/doc/html/context/stack.html Boost.Context stack allocation].
+See also [@boost:/libs/context/doc/html/context/stack.html Boost.Context stack
+allocation].
 
 [class_heading protected_fixedsize_stack]
 
-__boost_fiber__ provides the class __pfixedsize_stack__ which models
+__boost_job__ provides the class __pfixedsize_stack__ which models
 the __stack_allocator_concept__.
 It appends a guard page at the end of each stack to protect against exceeding
 the stack. If the guard page is accessed (read or write operation) a
@@ -93,8 +95,8 @@ stack which grows on demand.
 
 [note Segmented stacks are currently only supported by [*gcc] from version
 [*4.7] and [*clang] from version [*3.4] onwards. In order to use a
-__segmented_stack__, __boost_job__ (and __boost_fiber__ as well as __boost_context__)
-must be built with property `segmented-stacks`, e.g. [*toolset=gcc segmented-stacks=on]
-at b2/bjam command line.]
+__segmented_stack__, __boost_job__ (and __boost_fiber__ as well as
+__boost_context__) must be built with property `segmented-stacks`, e.g.
+[*toolset=gcc segmented-stacks=on] at b2/bjam command line.]
 
 [endsect]

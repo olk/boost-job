@@ -23,6 +23,11 @@
 
     }}
 
+__boost_job__ offers functionallity to allcoate physical memory on
+the memory banks of a NUMA note [footnote NUMA == non-uniform memory access],
+to which a logical CPU belongs.
+__nfixedsize_stack__ is used to allocate the stacks of the worker-fibers.
+
 [#class_numa_allocator]
 [section:numa_allocator Class `numa_allocator`]
 

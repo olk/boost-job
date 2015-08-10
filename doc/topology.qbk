@@ -63,8 +63,7 @@ which logical CPU is aprobriate for a job (memory latency).
     std::vector< topo_t > cpu_topology();
 
 [variablelist
-[[Returns:] []]
-[[Throws:] []]
+[[Returns:] [vector of topo_t structures of logical CPUs, which are online.]]
 ]
 
 [endsect] [/ section Class topo_t]
@@ -86,7 +85,7 @@ which logical CPU is aprobriate for a job (memory latency).
     topo_t topology() noexcept;
 
 [variablelist
-[[Returns:] []]
+[[Returns:] [the topo_t struct associated with the current worker-thread.]]
 [[Throws:] [Nothing.]]
 ]
 

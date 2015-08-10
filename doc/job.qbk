@@ -24,62 +24,163 @@
 
     }}}
 
-__boost_job__ provides function __cpu_topology__ to inspect which logical CPUs
-are online. The returned structure contains the ID of logical CPU [footnote On
-Windows] are online, the ID of the NUMA node to which the logical CPU belongs
-and with which other logical CPUs L1/L2/L3 cache is shared [footnore not all
-platforms supported].
-This information is used internally to pin worker threads to logical CPUs and
-which logical CPU is aprobriate for a job (memory latency).
+A job is a small unit of code that can be executed independently and parallel,
+e.g. it's a fain-grained work item.
+Each job is executed by a worker-fiber running in a worker-thread, thus jobs
+are scheduled cooperativly so that a job can yield to toher jobs during its
+execution. The result of a job is transported via a future.
 
-[heading Launching]
+The worker-thread is pinned to the logical CPU, e.g. the Operating System
+Scheduler does not schedule the thread to another CPU.
 
-[heading Exceptions]
+Jobs can be synchronized (without blocking the worker-thread) by
+using synchronization objects (like mutex, condtion_variables ...) from
+__boost_fiber__. For instance a job can wait for the result of a sub-job using
+`boost::fibers::future<>` (spawning sub-job by calling __sched_csubmit__)
+without blocking the worker-thread on which it is executed. It doesn't matter
+to which logical CPU the sub-job was submitted.
+
+Class __scheduler__ manages the worker-fibers (creating and pinning on logical
+CPU) and gives access to the different worker-threads via __sched_psubmit__ and
+__sched_csubmit__.
+The worker-threads and their worker-fibers are interrupted and joined by calling
+__sched_shutdown__.
+
+    // create scheduler, each worker-thread runs 3 worker-fibers
+    boost::jobs::scheduler s( boost::jobs::cpu_topology(),
+                              boost::jobs::static_pool< 3 >() );
+    int n = 10;
+    std::future< int > f = s.submit_preempt(
+              0, // execute job on logical CPU `0`
+              // pass job-function
+              [n](){
+                  int first = 1, second = 1, third = -1;
+                  for ( int i = 2; i < n; ++i) {
+                      third = first + second;
+                      first = second;
+                      second = third;
+                  }
+                  return third;
+              });
+
+    std::cout << "fibonacci(" << n << ") = " << f.get() << std::endl;
+    std::cout << "main: done" << std::endl;
+
+Exception thrown inside the job function are catched and transported via the
+returned future.
+
 
 [#class_scheduler]
 [section:scheduler Class `scheduler`]
 
     #include <boost/job/scheduler.hpp>
-    
+
     class scheduler {
     public:
-        scheduler();
-    
         template< typename FiberPool, typename StackAllocator >
         scheduler( std::vector< topo_t > const& topology, FiberPool && pool, StackAllocator salloc);
-    
+
         template< typename FiberPool >
         scheduler( std::vector< topo_t > const& topology, FiberPool && pool);
-    
+
         scheduler( std::vector< topo_t > const& topology);
-    
-        ~scheduler();
-    
+
+        ~scheduler() noexcept;
+
         scheduler( scheduler const&) = delete;
-    
+
         scheduler & operator=( scheduler const&) = delete;
-    
+
         template< typename Allocator, typename Fn, typename ... Args >
         std::future< typename std::result_of< Fn( Args ... ) >::type >
         submit_preempt( std::allocator_arg_t, Allocator alloc, uint32_t cpuid, Fn && fn, Args && ... args);
-    
+
         template< typename Fn, typename ... Args >
         std::future< typename std::result_of< Fn( Args ... ) >::type >
         submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args);
-    
+
         template< typename Allocator, typename Fn, typename ... Args >
         fibers::future< typename std::result_of< Fn&&( Args ... ) >::type >
         submit_coop( std::allocator_arg_t, Allocator alloc, uint32_t cpuid, Fn && fn, Args && ... args);
-    
+
         template< typename Fn, typename ... Args >
         fibers::future< typename std::result_of< Fn( Args ... ) >::type >
         submit_coop( uint32_t cpuid, Fn && fn, Args && ... args);
-    
+
         void shutdown();
     };
 
+[heading Constructor]
+
+        template< typename FiberPool, typename StackAllocator >
+        scheduler( std::vector< topo_t > const& topology, FiberPool && pool, StackAllocator salloc);
+
+        template< typename FiberPool >
+        scheduler( std::vector< topo_t > const& topology, FiberPool && pool);
+
+        scheduler( std::vector< topo_t > const& topology);
+
+[variablelist
+[[Effects:] [Depending on parameter `topology`, `worker-threads` are created and
+pinned to the logical CPUs. Depending on the FiberPool strategy, `worker-fibers`
+are launched.]]
+[[Note:] [StackAllocator is required to allocate a stack for the internal
+`worker-fibers`. If StackAllocator is not explicitly passed, a
+__nfixedsize_stack__ is used by default. __spool__ for 64 `worker-fibers` is
+used if no FiberPool is specified]]
+]
+
+[heading Destructor]
+
+        ~scheduler();
+
+[variablelist
+[[Effects:] [Interrupts and joins the worker-fibers and -threads.]]
+[[Throws:] [Nothing.]]
+]
+
+[template_member_heading scheduler..submit_preempt]
+
+        template< typename Allocator, typename Fn, typename ... Args >
+        std::future< typename std::result_of< Fn( Args ... ) >::type >
+        submit_preempt( std::allocator_arg_t, Allocator alloc, uint32_t cpuid, Fn && fn, Args && ... args);
+
+        template< typename Fn, typename ... Args >
+        std::future< typename std::result_of< Fn( Args ... ) >::type >
+        submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args);
+
+[variablelist
+[[Returns:] [a `std::future` associated with the job.]]
+[[Note:] [The job is executed by the worker-thread running on logical CPU
+`cpuid`. If no Allocator is passed, __numa_allocator__ is used.]]
+]
+
+[template_member_heading scheduler..submit_coop]
+
+        template< typename Fn, typename ... Args >
+        std::future< typename std::result_of< Fn( Args ... ) >::type >
+        submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args);
+
+        template< typename Allocator, typename Fn, typename ... Args >
+        fibers::future< typename std::result_of< Fn&&( Args ... ) >::type >
+        submit_coop( std::allocator_arg_t, Allocator alloc, uint32_t cpuid, Fn && fn, Args && ... args);
+
+[variablelist
+[[Returns:] [a `boost:.fibers::future` associated with the job.]]
+[[Note:] [The job is executed by the worker-thread running on logical CPU
+`cpuid`. If no Allocator is passed, __numa_allocator__ is used.]]
+]
+
+[member_heading scheduler..shutdown]
+
+        void shutdown();
+
+[variablelist
+[[Effects:] [Interrupts and joins worker-fibers and -threads.]]
+]
 
 [endsect] [/ section Class scheduler]
+
 
 [section:this_worker Namespace this_worker]
 
@@ -88,6 +189,10 @@ which logical CPU is aprobriate for a job (memory latency).
     namespace this_worker {
 
     topo_t topology() noexcept;
+
+    template< typename Fn, typename ... Args >
+    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    submit( Fn && fn, Args && ... args);
 
     }}}
 
@@ -98,23 +203,10 @@ which logical CPU is aprobriate for a job (memory latency).
     topo_t topology() noexcept;
 
 [variablelist
-[[Returns:] []]
+[[Returns:] [Instance of `topo_t` associated with the worker-thread.]]
 [[Throws:] [Nothing.]]
+[[See also:] [[link topology]]]
 ]
-
-[endsect] [/ section Namespace this_worker]
-
-[section:this_worker Namespace this_worker]
-
-    namespace boost {
-    namespace jobs {
-    namespace this_worker {
-
-    template< typename Fn, typename ... Args >
-    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
-    submit( Fn && fn, Args && ... args);
-
-    }}}
 
 [ns_function_heading this_worker..submit()]
 
@@ -125,10 +217,11 @@ which logical CPU is aprobriate for a job (memory latency).
     submit( Fn && fn, Args && ... args);
 
 [variablelist
-[[Returns:] []]
-[[Throws:] [Nothing.]]
+[[Effects:] [The job associated with `fn` is executed within this worker-thread.]]
+[[Returns:] [Future associated with the result of the submitted job.]]
 ]
 
 [endsect] [/ section Namespace this_worker]
+
 
 [endsect]

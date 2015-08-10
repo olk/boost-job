@@ -7,6 +7,19 @@
 
 [section:pools Pools]
 
+Each worker-thread runs a set of worker-fibers. The fiber-pool
+implements a strategy how worker-fibers are created and destroyed.
+A worker-fiber deques a job from the job queue of the worker-thread,
+So each job is associated with on worker-fiber. After finishing the
+job the fiber dequeues the next job, This operation might block the
+worker-fiber but not the worker-thread, which is capable to execute
+job by running another worker-fiber.
+The pool is stored on thread's stack, so its life time is the life
+time of the worker-thread.
+The creation of worker-fibers, the processing of job and the
+destruction of worker-fibers are done inside `operator()` of the
+fiber pool.
+
 [heading Synopsis]
 
     #include <boost/job/all.hpp>
@@ -29,12 +42,24 @@
 
     template< std::size_t N >
     struct static_pool {
-        static_pool() = default;
-
         template< typename StackAllocator >
         void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
                          detail::queue * q, detail::rendezvous * ntfy);
     };
+
+[template_member_heading static_pool..operator()]
+
+        template< typename StackAllocator >
+        void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
+                         detail::queue * q, detail::rendezvous * ntfy);
+
+[variablelist
+[[Effects:] [Creates `N` worker-fibers and connects them with the job queue
+of the worker-thread.
+A worker.fiber gets removed (destroyed) if the job-queue is empty,
+worker-fibers are ready to run and more than `Min` worker-fibers are running.
+Before this function returns all worker-fibers are interrupted and joined.]]
+]
 
 [endsect] [/ section Class static_pool]
 
@@ -47,12 +72,25 @@
     template< std::size_t Min, std::size_t Max, std::size_t N = 1 >
     class dynamic_pool {
     public:
-        dynamic_pool() = default;
-
         template< typename StackAllocator >
         void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
                          detail::queue * q, detail::rendezvous * ntfy);
     };
+
+[template_member_heading dynamic_pool..operator()]
+
+        template< typename StackAllocator >
+        void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
+                         detail::queue * q, detail::rendezvous * ntfy);
+
+[variablelist
+[[Effects:] [Creates `Min` worker-fibers and connects them with the job queue
+of the worker-thread. If job queue is not empty and no worker-fibers are ready
+to run, a new worker-fiber is spawned until `Max` worker-fibers are running.
+A worker.fiber gets removed (destroyed) if the job-queue is empty,
+worker-fibers are ready to run and more than `Min` worker-fibers are running.
+Before this function returns all worker-fibers are interrupted and joined.]]
+]
 
 [endsect] [/ section Class dynamic_pool]
 
