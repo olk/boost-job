@@ -155,6 +155,10 @@ std::vector< topo_t > cpu_topology() {
         }
     }
 
+    for ( std::pair< uint32_t, topo_t > p : cpu_map) {
+        topo.push_back( p.second);
+    }
+
     return topo;
 }
 
