@@ -30,10 +30,11 @@ void pin_thread( uint32_t cpuid) {
     uint32_t id = cpuid % 64 + 1; 
     // set the bit mask of the logical CPU
     affinity.Mask = static_cast< KAFFINITY >( 1) << id;
-    if ( 0 == ::SetGroupAffinity( ::GetCurrentThread(), affinity, nullptr);
+    if ( 0 == ::SetThreadAffinityMask( ::GetCurrentThread(), ( DWORD_PTR) & affinity) ) {
         throw std::system_error(
                 std::error_code( ::GetLastError(), std::system_category() ),
-                "::SetGroupAffinity() failed");
+                "::SetThreadAffinityMask() failed");
+    }
 }
 
 }}}
