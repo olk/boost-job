@@ -110,8 +110,6 @@ public:
     decltype( auto)
     submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_preempt(
-            std::allocator_arg, 
-            numa_allocator< detail::work >( topology_[cpuid].node_id),
             std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
@@ -129,8 +127,6 @@ public:
     decltype( auto)
     submit_coop( uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_coop(
-            std::allocator_arg,
-            numa_allocator< detail::work >( topology_[cpuid].node_id),
             std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
