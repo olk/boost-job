@@ -121,8 +121,16 @@ public:
     template< typename Fn, typename ... Args >
     std::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_preempt( Fn && fn, Args && ... args) {
-        return submit_preempt( std::allocator_arg, numa_allocator< work >( topology_.node_id),
-                               std::forward< Fn >( fn), std::forward< Args >( args) ...);
+        typedef typename std::result_of< Fn&&( Args && ... ) >::type result_type;
+
+        std::packaged_task< result_type( typename std::decay< Args >::type ... ) > pt(
+                std::forward< Fn >( fn) );
+        std::future< result_type > f( pt.get_future() );
+        // enqueue work into MPSC-queue
+        queue_.push( create_work(
+            numa_allocator< work >( topology_.node_id),
+            std::move( pt), std::forward< Args >( args) ... ) );
+        return std::move( f);
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
@@ -142,8 +150,16 @@ public:
     template< typename Fn, typename ... Args >
     fibers::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_coop( Fn && fn, Args && ... args) {
-        return submit_coop( std::allocator_arg, numa_allocator< work >( topology_.node_id),
-                            std::forward< Fn >( fn), std::forward< Args >( args) ...);
+        typedef typename std::result_of< Fn&&( Args && ... ) >::type result_type;
+
+        fibers::packaged_task< result_type( typename std::decay< Args >::type ... ) > pt(
+                std::forward< Fn >( fn) );
+        fibers::future< result_type > f( pt.get_future() );
+        // enqueue work into MPSC-queue
+        queue_.push( create_work(
+            numa_allocator< work >( topology_.node_id),
+            std::move( pt), std::forward< Args >( args) ... ) );
+        return std::move( f);
     }
 
     friend void intrusive_ptr_add_ref( worker_thread * t) {

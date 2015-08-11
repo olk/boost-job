@@ -97,43 +97,41 @@ public:
     scheduler & operator=( scheduler const&) = delete;
 
     template< typename Allocator, typename Fn, typename ... Args >
-    std::future< typename std::result_of< Fn&&( Args && ... ) >::type >
+    decltype( auto)
     submit_preempt( std::allocator_arg_t, Allocator alloc,
                     uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_preempt(
-            std::allocator_arg, alloc,
+            std::allocator_arg,
+            alloc,
             std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
     template< typename Fn, typename ... Args >
-    std::future< typename std::result_of< Fn&&( Args && ... ) >::type >
+    decltype( auto)
     submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args) {
-        return submit_preempt( std::allocator_arg,
-                               numa_allocator< detail::work >(
-                                   topology_[cpuid].node_id),
-                               cpuid,
-                               std::forward< Fn >( fn),
-                               std::forward< Args >( args) ...);
+        return worker_threads_[cpuid]->submit_preempt(
+            std::allocator_arg, 
+            numa_allocator< detail::work >( topology_[cpuid].node_id),
+            std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
-    fibers::future< typename std::result_of< Fn&&( Args && ... ) >::type >
+    decltype( auto)
     submit_coop( std::allocator_arg_t, Allocator alloc,
                  uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_coop(
-            std::allocator_arg, alloc,
+            std::allocator_arg,
+            alloc,
             std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
     template< typename Fn, typename ... Args >
-    fibers::future< typename std::result_of< Fn&&( Args && ... ) >::type >
+    decltype( auto)
     submit_coop( uint32_t cpuid, Fn && fn, Args && ... args) {
-        return submit_coop( std::allocator_arg,
-                            numa_allocator< detail::work >(
-                                topology_[cpuid].node_id),
-                            cpuid,
-                            std::forward< Fn >( fn),
-                            std::forward< Args >( args) ...);
+        return worker_threads_[cpuid]->submit_coop(
+            std::allocator_arg,
+            numa_allocator< detail::work >( topology_[cpuid].node_id),
+            std::forward< Fn >( fn), std::forward< Args >( args) ... );
     }
 
     void shutdown();
