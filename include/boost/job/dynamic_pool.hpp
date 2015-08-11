@@ -63,7 +63,6 @@ private:
                     for ( typename fiber_map_t::value_type & v : ( * fibs) ) {
                         if ( v.second.terminated() ) {
                             v.second.detach();
-                            fibs->erase( v.first); 
                         }
                     }
                     // mark worker fiber for detaching if:
