@@ -14,7 +14,9 @@
 #include <boost/fiber/future.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/work.hpp>
 #include <boost/job/detail/worker_thread.hpp>
+#include <boost/job/memory.hpp>
 #include <boost/job/topology.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -25,16 +27,18 @@ namespace boost {
 namespace jobs {
 namespace this_worker {
 
-template< typename Fn, typename ... Args >
-fibers::future< typename std::result_of< Fn( Args ... ) >::type >
-submit( Fn && fn, Args && ... args) {
-    return detail::worker_thread::instance()->submit_coop(
-        std::forward< Fn >( fn), std::forward< Args >( args) ... );
-}
-
 inline
 topo_t topology() noexcept {
     return detail::worker_thread::instance()->topology();
+}
+
+template< typename Fn, typename ... Args >
+decltype( auto)
+submit( Fn && fn, Args && ... args) {
+    return detail::worker_thread::instance()->submit_coop(
+        std::allocator_arg,
+        numa_allocator< detail::work >( topology().node_id),
+        std::forward< Fn >( fn), std::forward< Args >( args) ... );
 }
 
 }}}
