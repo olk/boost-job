@@ -33,7 +33,7 @@ void explore( std::vector< boost::jobs::topo_t > & topo, lgrp_cookie_t cookie, l
         for ( int i = 0; i < size; ++i) {
             boost::jobs::topo_t t;
             t.node_id = static_cast< uint32_t >( node);
-            t.cpu_id = static_cast< uint32_t >( cpuids[i]);
+            t.processor_id = static_cast< uint32_t >( cpuids[i]);
             topo.push_back( t);
         }
     }

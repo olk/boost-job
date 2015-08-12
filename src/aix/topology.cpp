@@ -46,7 +46,7 @@ void explore( int sdl, std::vector< boost::jobs::topo_t > & topo) {
             if ( ::rs_op( RS_TESTRESOURCE, rad, nullptr, R_PROCS, j) ) {
                 boost::jobs::topo_t t;
                 t.node_id = i;
-                t.cpu_id = j;
+                t.processor_id = j;
                 topo.push_back( t);
             }
         }

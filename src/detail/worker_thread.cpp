@@ -33,7 +33,7 @@ worker_thread::shutdown() {
         // set termination flag
         shtdwn_ = true;
         // notify master fiber
-        ntfy_.notify();
+        rdzv_.notify();
         // join worker thread
         thrd_.join();
     }

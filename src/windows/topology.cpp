@@ -102,11 +102,11 @@ std::vector< topo_t > cpu_topology() {
         uint32_t node_id = i->NumaNode.NodeNumber;
         uint32_t group_id = i->NumaNode.GroupMask.Group;
         std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->NumaNode.GroupMask.Mask);
-        for ( uint32_t cpu_id : cpu_set) {
+        for ( uint32_t processor_id : cpu_set) {
             topo_t t;
             t.node_id = node_id;
-            t.cpu_id = cpu_id;
-            cpu_map[t.cpu_id] = t;
+            t.processor_id = processor_id;
+            cpu_map[t.processor_id] = t;
         }
     }
  
@@ -121,10 +121,10 @@ std::vector< topo_t > cpu_topology() {
                 {
                     // L1 cache
                     std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->Cache.GroupMask.Mask);
-                    for ( uint32_t cpu_id : cpu_set) {
-                        cpu_map[cpu_id].l1_shared_with = cpu_set;
+                    for ( uint32_t processor_id : cpu_set) {
+                        cpu_map[processor_id].l1_shared_with = cpu_set;
                         // remove itself from shared L1 list
-                        cpu_map[cpu_id].l1_shared_with.erase( cpu_id);
+                        cpu_map[processor_id].l1_shared_with.erase( processor_id);
                     }
                     break;
                 }
@@ -132,10 +132,10 @@ std::vector< topo_t > cpu_topology() {
                 {
                     // L2 cache
                     std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->Cache.GroupMask.Mask);
-                    for ( uint32_t cpu_id : cpu_set) {
-                        cpu_map[cpu_id].l2_shared_with = cpu_set;
+                    for ( uint32_t processor_id : cpu_set) {
+                        cpu_map[processor_id].l2_shared_with = cpu_set;
                         // remove itself from shared L2 list
-                        cpu_map[cpu_id].l2_shared_with.erase( cpu_id);
+                        cpu_map[processor_id].l2_shared_with.erase( processor_id);
                     }
                     break;
                 }
@@ -143,10 +143,10 @@ std::vector< topo_t > cpu_topology() {
                 {
                     // L3 cache
                     std::set< uint32_t > cpu_set = compute_cpu_set( group_id, i->Cache.GroupMask.Mask);
-                    for ( uint32_t cpu_id : cpu_set) {
-                        cpu_map[cpu_id].l3_shared_with = cpu_set;
+                    for ( uint32_t processor_id : cpu_set) {
+                        cpu_map[processor_id].l3_shared_with = cpu_set;
                         // remove itself from shared L3 list
-                        cpu_map[cpu_id].l3_shared_with.erase( cpu_id);
+                        cpu_map[processor_id].l3_shared_with.erase( processor_id);
                     }
                     break;
                 }

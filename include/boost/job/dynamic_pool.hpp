@@ -47,7 +47,8 @@ private:
                     }
                     // spawn one new worker fiber if:
                     // - Max worker fibers are not reached
-                    // - work queue is not empty OR fiber scheduler has no fiber ready to run
+                    // - work queue is not empty OR fiber scheduler has no more
+                    //   than `N` fiber ready to run
                     // current fiber might be blocked (waiting/suspended)
                     // so that at least one worker fiber is able to dequeue
                     // a new work item from the queue
@@ -77,7 +78,6 @@ private:
                         break;
                     }
                 } catch ( fibers::fiber_interrupted const&) {
-                    // do nothing; shtdwn should be set to true
                 }
             }
         }
@@ -157,7 +157,7 @@ public:
 
     template< typename StackAllocator >
     void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                     detail::queue * q, detail::rendezvous * ntfy) {
+                     detail::queue * q, detail::rendezvous * rdzv) {
         fiber_map_t fibs;
         // create Min worker fibers
         for ( std::size_t i = 0; i < Min; ++i) {
@@ -166,7 +166,7 @@ public:
             fibs[id] = std::move( f);
         }
         // wait for termination notification
-        ntfy->wait();
+        rdzv->wait();
         // close queue
         q->close();
         // interrupt worker fibers

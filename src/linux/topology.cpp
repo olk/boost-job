@@ -129,12 +129,12 @@ std::vector< topo_t > cpu_topology() {
         return topo;
     }
     // iterate list of cpu IDs
-    for ( uint32_t cpu_id : cpus_online) {
+    for ( uint32_t processor_id : cpus_online) {
         topo_t t;
-        t.cpu_id = cpu_id;
+        t.processor_id = processor_id;
         fs::path cpu_path(
             boost::str(
-                boost::format("/sys/devices/system/cpu/cpu%d/") % cpu_id) );
+                boost::format("/sys/devices/system/cpu/cpu%d/") % processor_id) );
         BOOST_ASSERT( fs::exists( cpu_path) );
         // 2. to witch NUMA node the CPU belongs to
         directory_iterator e;
@@ -149,19 +149,19 @@ std::vector< topo_t > cpu_topology() {
         std::getline( fs_l1, content);
         t.l1_shared_with = ids_from_line( content);
         // remove itself from shared L1 list
-        t.l1_shared_with.erase( cpu_id);
+        t.l1_shared_with.erase( processor_id);
         // 4. which CPUs does cpu# share it's L2 cache with
         fs::ifstream fs_l2( cpu_path / "cache/index2/shared_cpu_list");
         std::getline( fs_l2, content);
         t.l2_shared_with = ids_from_line( content);
         // remove itself from shared L2 list
-        t.l2_shared_with.erase( cpu_id);
+        t.l2_shared_with.erase( processor_id);
         // 5. which CPUs does cpu# share it's L3 cache with
         fs::ifstream fs_l3( cpu_path / "cache/index3/shared_cpu_list");
         std::getline( fs_l3, content);
         t.l3_shared_with = ids_from_line( content);
         // remove itself from shared L3 list
-        t.l3_shared_with.erase( cpu_id);
+        t.l3_shared_with.erase( processor_id);
         // store parsed t
         topo.push_back( t);
     }

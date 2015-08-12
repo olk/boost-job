@@ -38,7 +38,7 @@ std::vector< topo_t > cpu_topology() {
                         "mpctl() failed");
             }
             t.node_id = static_cast< uint32_t >( node);
-            t.cpu_id = static_cast< uint32_t >( cpu);
+            t.processor_id = static_cast< uint32_t >( cpu);
             topo.push_back( t);
             cpu = ::mpctl( MPC_GETNEXTSPU_SYS, cpu, 0);
         }

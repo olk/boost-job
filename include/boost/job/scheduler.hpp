@@ -11,7 +11,6 @@
 #include <functional>
 #include <future>
 #include <map>
-#include <type_traits> // std::result_of
 #include <utility> // std::forward()
 #include <vector>
 
@@ -43,7 +42,7 @@ private:
     create_topology_map( std::vector< topo_t > const& topology) {
         std::map< uint32_t, topo_t > map;
         for ( auto t : topology) {
-            map[t.cpu_id] = t;
+            map[t.processor_id] = t;
         }
         return map;
     }
@@ -58,12 +57,12 @@ public:
         worker_threads_( std::max_element(
                     topology.begin(),
                     topology.end(),
-                    [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
+                    [](topo_t const& l,topo_t const& r){ return l.processor_id < r.processor_id; })->processor_id
                 + 1) {
         BOOST_ASSERT( topology.size() == topology_.size() );
         // only for given CPUs allocate worker threads
         for ( auto t : topology) {
-            worker_threads_[t.cpu_id] = detail::worker_thread::create(
+            worker_threads_[t.processor_id] = detail::worker_thread::create(
                     t, std::forward< FiberPool >( pool), salloc);
         }
     }
@@ -76,12 +75,12 @@ public:
         worker_threads_( std::max_element(
                     topology.begin(),
                     topology.end(),
-                    [](topo_t const& l,topo_t const& r){ return l.cpu_id < r.cpu_id; })->cpu_id
+                    [](topo_t const& l,topo_t const& r){ return l.processor_id < r.processor_id; })->processor_id
                 + 1) {
         BOOST_ASSERT( topology.size() == topology_.size() );
         // only for given CPUs allocate worker threads
         for ( auto t : topology) {
-            worker_threads_[t.cpu_id] = detail::worker_thread::create(
+            worker_threads_[t.processor_id] = detail::worker_thread::create(
                     t, std::forward< FiberPool >( pool), numa_fixedsize( t.node_id) );
         }
     }

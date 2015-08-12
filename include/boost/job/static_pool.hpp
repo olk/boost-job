@@ -32,7 +32,7 @@ struct static_pool {
 
     template< typename StackAllocator >
     void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                     detail::queue * q, detail::rendezvous * ntfy) {
+                     detail::queue * q, detail::rendezvous * rdzv) {
         std::array< fibers::fiber, N > fibs;
         // create worker fibers
         for ( std::size_t i = 0; i < N; ++i) {
@@ -49,13 +49,12 @@ struct static_pool {
                                             // process work items
                                             w->execute();
                                         } catch ( fibers::fiber_interrupted const&) {
-                                            // do nothing; shtdwn should be set to true
                                         }
                                     }
                                 }));
         }
         // wait for termination notification
-        ntfy->wait();
+        rdzv->wait();
         // close queue
         q->close();
         // interrupt worker fibers

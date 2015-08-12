@@ -33,13 +33,13 @@ std::vector< topo_t > cpu_topology() {
     ::cpuset_zero( set);
     if ( 0 == ::pthread_getaffinity_np( ::pthread_self(), ::cpuset_size( set), set) ) {
         for ( cpuid_t i = 0; ; ++i) {
-            uint32_t cpu_id = ::cpuset_isset( i, set);
-            if ( -1 == cpu_id) {
+            uint32_t processor_id = ::cpuset_isset( i, set);
+            if ( -1 == processor_id) {
                 break;
-            } else if ( 0 < cpu_id) {
+            } else if ( 0 < processor_id) {
                 topo_t t;
                 t.node_id = 0; // FreeBSD does not support NUMA
-                t.cpu_id = cpu_id;
+                t.processor_id = processor_id;
                 topo.push_back( t); 
             }
         }

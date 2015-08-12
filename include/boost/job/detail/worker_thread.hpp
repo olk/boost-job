@@ -46,7 +46,7 @@ private:
 
     std::size_t                             use_count_;
     std::atomic_bool                        shtdwn_;
-    rendezvous                              ntfy_;
+    rendezvous                              rdzv_;
     topo_t                                  topology_;
     queue                                   queue_;
     std::thread                             thrd_;
@@ -54,23 +54,20 @@ private:
     template< typename FiberPool, typename StackAllocator >
     void worker_fn_( FiberPool && pool, StackAllocator salloc) {
         // pin thread to CPU
-        pin_thread( topology_.cpu_id);
+        pin_thread( topology_.processor_id);
 
         // set static thread-local pointer
         instance_ = this;
 
-        // create + join master fiber
-        // master fiber executes fiber pool
-        fibers::fiber(
-                std::allocator_arg, salloc,
-                std::forward< FiberPool >( pool), salloc, & shtdwn_, & queue_, & ntfy_).join();
+        // master fiber (== worker thread) executes fiber pool
+        pool( salloc, & shtdwn_, & queue_, & rdzv_);
     }
 
     template< typename FiberPool, typename StackAllocator >
     worker_thread( topo_t const& topology, FiberPool && pool, StackAllocator salloc) :
         use_count_( 0),
         shtdwn_( false),
-        ntfy_(),
+        rdzv_(),
         topology_( topology),
         queue_(),
         thrd_( & worker_thread::worker_fn_< FiberPool, StackAllocator >, this, std::forward< FiberPool >( pool), salloc) {
@@ -104,9 +101,9 @@ public:
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
-    std::future< typename std::result_of< Fn&&( Args && ... ) >::type >
+    std::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_preempt( std::allocator_arg_t, Allocator alloc, Fn && fn, Args && ... args) {
-        typedef typename std::result_of< Fn&&( Args && ... ) >::type result_type;
+        typedef typename std::result_of< Fn( Args ... ) >::type result_type;
 
         std::packaged_task< result_type( typename std::decay< Args >::type ... ) > pt(
                 std::forward< Fn >( fn) );
@@ -119,9 +116,9 @@ public:
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
-    fibers::future< typename std::result_of< Fn&&( Args && ... ) >::type >
+    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
     submit_coop( std::allocator_arg_t, Allocator alloc, Fn && fn, Args && ... args) {
-        typedef typename std::result_of< Fn&&( Args && ... ) >::type result_type;
+        typedef typename std::result_of< Fn( Args ... ) >::type result_type;
 
         fibers::packaged_task< result_type( typename std::decay< Args >::type ... ) > pt(
                 std::forward< Fn >( fn) );

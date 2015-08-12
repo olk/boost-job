@@ -7,7 +7,6 @@
 #ifndef BOOST_JOBS_OPERATION_H
 #define BOOST_JOBS_OPERATION_H
 
-#include <type_traits> // std::result_of
 #include <utility> // std::forward()
 
 #include <boost/config.hpp>
