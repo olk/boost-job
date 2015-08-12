@@ -23,20 +23,20 @@ int main( int argc, char * argv[]) {
         std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
         for ( boost::jobs::topo_t topo : cpus) {
             std::cout << "NUMA node: " << topo.node_id << "\n";
-            std::cout << "CPU ID: " << topo.cpu_id << "\n";
+            std::cout << "CPU ID: " << topo.processor_id << "\n";
             std::cout << "share L1 cache with: ";
-            for ( uint32_t cpu_id : topo.l1_shared_with) {
-                std::cout << cpu_id << " ";
+            for ( uint32_t processor_id : topo.l1_shared_with) {
+                std::cout << processor_id << " ";
             }
             std::cout << "\n";
             std::cout << "share L2 cache with: ";
-            for ( uint32_t cpu_id : topo.l2_shared_with) {
-                std::cout << cpu_id << " ";
+            for ( uint32_t processor_id : topo.l2_shared_with) {
+                std::cout << processor_id << " ";
             }
             std::cout << "\n";
             std::cout << "share L3 cache with: ";
-            for ( uint32_t cpu_id : topo.l3_shared_with) {
-                std::cout << cpu_id << " ";
+            for ( uint32_t processor_id : topo.l3_shared_with) {
+                std::cout << processor_id << " ";
             }
             std::cout << std::endl;
         }

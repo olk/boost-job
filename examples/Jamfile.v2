@@ -33,3 +33,11 @@ exe fibonacci1
 exe fibonacci2
     : fibonacci2.cpp
     ;
+
+exe synchronize
+    : synchronize.cpp
+    ;
+
+exe ping_pong
+    : ping_pong.cpp
+    ;
