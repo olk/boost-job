@@ -101,9 +101,9 @@ public:
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
-    std::future< typename std::result_of< Fn( Args ... ) >::type >
+    std::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_preempt( std::allocator_arg_t, Allocator alloc, Fn && fn, Args && ... args) {
-        typedef typename std::result_of< Fn( Args ... ) >::type result_type;
+        typedef typename std::result_of< Fn&&( Args && ... ) >::type result_type;
 
         std::packaged_task< result_type( typename std::decay< Args >::type ... ) > pt(
                 std::forward< Fn >( fn) );
@@ -116,9 +116,9 @@ public:
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
-    fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+    fibers::future< typename std::result_of< Fn&&( Args && ... ) >::type >
     submit_coop( std::allocator_arg_t, Allocator alloc, Fn && fn, Args && ... args) {
-        typedef typename std::result_of< Fn( Args ... ) >::type result_type;
+        typedef typename std::result_of< Fn&&( Args && ... ) >::type result_type;
 
         fibers::packaged_task< result_type( typename std::decay< Args >::type ... ) > pt(
                 std::forward< Fn >( fn) );
