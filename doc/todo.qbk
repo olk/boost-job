@@ -8,7 +8,7 @@
 [section:todo TODO]
 
     * replace current future implementation (allocating memory) by
-      non-allocating implementation of i[@https://github.com/ned14/boost.monad boost.monad]
+      non-allocating implementation of [@http://github.com/ned14/boost.monad boost.monad]
       written by Niall Douglas
     * custom fiber scheduling algorithm per worker thread
 

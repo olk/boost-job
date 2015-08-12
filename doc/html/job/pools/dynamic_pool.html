@@ -1,0 +1,83 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class dynamic_pool</title>
+<link rel="stylesheet" href="../../../../../../doc/src/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="../../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="up" href="../pools.html" title="Pools">
+<link rel="prev" href="static_pool.html" title="Class static_pool">
+<link rel="next" href="../numa.html" title="NUMA">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr>
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../../../boost.png"></td>
+<td align="center"><a href="../../../../../../index.html">Home</a></td>
+<td align="center"><a href="../../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
+<td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
+<td align="center"><a href="../../../../../../more/index.htm">More</a></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="static_pool.html"><img src="../../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../pools.html"><img src="../../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="../numa.html"><img src="../../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="job.pools.dynamic_pool"></a><a name="class_dynamic_pool"></a><a class="link" href="dynamic_pool.html" title="Class dynamic_pool">Class
+      <code class="computeroutput"><span class="identifier">dynamic_pool</span></code></a>
+</h3></div></div></div>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">job</span><span class="special">/</span><span class="identifier">dynamic_pool</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">Min</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">Max</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">1</span> <span class="special">&gt;</span>
+<span class="keyword">class</span> <span class="identifier">dynamic_pool</span> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">StackAllocator</span> <span class="special">&gt;</span>
+    <span class="keyword">void</span> <span class="keyword">operator</span><span class="special">()(</span> <span class="identifier">StackAllocator</span> <span class="identifier">salloc</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">atomic_bool</span> <span class="special">*</span> <span class="identifier">shtdwn</span><span class="special">,</span>
+                     <span class="identifier">detail</span><span class="special">::</span><span class="identifier">queue</span> <span class="special">*</span> <span class="identifier">q</span><span class="special">,</span> <span class="identifier">detail</span><span class="special">::</span><span class="identifier">rendezvous</span> <span class="special">*</span> <span class="identifier">rdzv</span><span class="special">);</span>
+<span class="special">};</span>
+</pre>
+<p>
+        </p>
+<h5>
+<a name="dynamic_pool_operator()_bridgehead"></a>
+  <span><a name="dynamic_pool_operator()"></a></span>
+  <a class="link" href="dynamic_pool.html#dynamic_pool_operator()">Templated
+        member function <code class="computeroutput">operator()</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">StackAllocator</span> <span class="special">&gt;</span>
+<span class="keyword">void</span> <span class="keyword">operator</span><span class="special">()(</span> <span class="identifier">StackAllocator</span> <span class="identifier">salloc</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">atomic_bool</span> <span class="special">*</span> <span class="identifier">shtdwn</span><span class="special">,</span>
+                 <span class="identifier">detail</span><span class="special">::</span><span class="identifier">queue</span> <span class="special">*</span> <span class="identifier">q</span><span class="special">,</span> <span class="identifier">detail</span><span class="special">::</span><span class="identifier">rendezvous</span> <span class="special">*</span> <span class="identifier">rdzv</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Creates <code class="computeroutput"><span class="identifier">Min</span></code> worker-fibers
+              and connects them with the job queue of the worker-thread. If job queue
+              is not empty or no worker-fibers are ready to run than <code class="computeroutput"><span class="identifier">N</span></code>, a new worker-fiber will be spawned
+              until <code class="computeroutput"><span class="identifier">Max</span></code> worker-fibers
+              are running. A worker.fiber gets removed (destroyed) if the job-queue
+              is empty, worker-fibers are ready to run and more than <code class="computeroutput"><span class="identifier">Min</span></code> worker-fibers are running. Before
+              this function returns all worker-fibers are interrupted and joined.
+            </p></dd>
+</dl>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Oliver Kowalke<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="static_pool.html"><img src="../../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../pools.html"><img src="../../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="../numa.html"><img src="../../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

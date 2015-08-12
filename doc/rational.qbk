@@ -21,14 +21,14 @@ can be found [@boost:/libs/context/doc/html/context/architectures.html here].
 [heading NUMA support]
 
 [table NUMA support
-    [[OS]       [processor topology]  [memory allocation on NUMA node]  [pin thread to logical processor]]
-    [[Linux]    [+]             [+]                               [+]]
-    [[Windows]  [+]             [+]                               [+]]
-    [[AIX]      [+]             [-[footnote incomplete/mapped to malloc()/free()]]                               [+]]
-    [[HP/UX]    [+]             [-[footnote incomplete/mapped to malloc()/free()]]                               [+]]
-    [[Solaris]  [+]             [-[footnote incomplete/mapped to malloc()/free()]]                               [+]]
-    [[FreeBSD]  [+]             [-[footnote implementation of NUMA support inside FreeBSD ongoing]                               [+]]
-    [[MacOS X]  [-]             [-]                               [-]]
+    [[OS]       [processor topology]  [memory allocation on NUMA node]                                     [pin thread to logical processor]]
+    [[Linux]    [+]                   [+]                                                                  [+]]
+    [[Windows]  [+]                   [+]                                                                  [+]]
+    [[AIX]      [+]                   [-[footnote incomplete/mapped to malloc()/free()]]                   [+]]
+    [[HP/UX]    [+]                   [-[footnote incomplete/mapped to malloc()/free()]]                   [+]]
+    [[Solaris]  [+]                   [-[footnote incomplete/mapped to malloc()/free()]]                   [+]]
+    [[FreeBSD]  [+]                   [-[footnote implementation of NUMA support inside FreeBSD ongoing]]  [+]]
+    [[MacOS X]  [-]                   [-]                                                                  [-]]
 ]
 
 

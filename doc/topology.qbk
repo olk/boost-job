@@ -33,10 +33,10 @@
 __boost_job__ provides function __cpu_topology__ to inspect which logical processors
 are online. The returned structure contains the ID of logical processor [footnote On
 Windows] are online, the ID of the NUMA node to which the logical processor belongs
-and with which other logical processors L1/L2/L3 cache is shared [footnore not all
+and with which other logical processors L1/L2/L3 cache is shared [footnote not all
 platforms supported].
 This information is used internally to pin worker threads to logical processors and
-which logical processor is aprobriate for a job (memory latency).
+which logical processor is appropriate for a job (memory latency).
 
 [#class_topo_t]
 [section:topo_t Class `topo_t`]

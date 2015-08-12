@@ -27,7 +27,7 @@
 A job is a small unit of code that can be executed independently and parallel,
 e.g. it's a fain-grained work item.
 Each job is executed by a worker-fiber running in a worker-thread, thus jobs
-are scheduled cooperativly so that a job can yield to toher jobs during its
+are scheduled cooperatively so that a job can yield to other jobs during its
 execution. The result of a job is transported via a future.
 
 The worker-thread is pinned to the logical processor, e.g. the Operating System
@@ -63,7 +63,7 @@ Exception thrown inside the job function are catched and transported via the
 returned future.
 
 Jobs can be synchronized (without blocking the worker-thread) by
-using synchronization objects (like mutex, condtion_variables ...) from
+using synchronization objects (like mutex, condition_variables ...) from
 __boost_fiber__. For instance a job can wait for the result of a sub-job using
 `boost::fibers::future<>` (spawning sub-job by calling __sched_csubmit__)
 without blocking the worker-thread on which it is executed. It doesn't matter
@@ -75,7 +75,7 @@ to which logical processor the sub-job was submitted.
     int i = 0;
     std::future< void > f1 = s.submit_preempt( topo[0].processor_id,
               [&mtx,&cond, &i](){
-                  // aquire lock on mutex, might be happen before the other jobs tries to aquire lock
+                  // aquire lock on mutex, might be happen before the other jobs tries to acquire lock
                   std::unique_lock< boost::fibers::mutex > lk( mtx);
                   // wait for synchronizing shared variable `i`
                   // will suspended current job
@@ -226,25 +226,11 @@ used if no FiberPool is specified]]
     namespace jobs {
     namespace this_worker {
 
-    topo_t topology() noexcept;
-
     template< typename Fn, typename ... Args >
     fibers::future< typename std::result_of< Fn( Args ... ) >::type >
     submit( Fn && fn, Args && ... args);
 
     }}}
-
-[ns_function_heading this_worker..topology()]
-
-    #include <boost/job/operations.hpp>
-
-    topo_t topology() noexcept;
-
-[variablelist
-[[Returns:] [Instance of `topo_t` associated with the worker-thread.]]
-[[Throws:] [Nothing.]]
-[[See also:] [[link topology]]]
-]
 
 [ns_function_heading this_worker..submit()]
 

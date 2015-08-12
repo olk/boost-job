@@ -1,0 +1,108 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Overview</title>
+<link rel="stylesheet" href="../../../../../doc/src/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="prev" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="next" href="job_mgmt.html" title="Job management">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr>
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../../boost.png"></td>
+<td align="center"><a href="../../../../../index.html">Home</a></td>
+<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
+<td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
+<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../index.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="job_mgmt.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="job.overview"></a><a class="link" href="overview.html" title="Overview">Overview</a>
+</h2></div></div></div>
+<p>
+      <span class="bold"><strong>Boost.Job</strong></span> provides a framework for asynchronous
+      execution of job-graphs <sup>[<a name="job.overview.f0" href="#ftn.job.overview.f0" class="footnote">1</a>]</sup> of arbitrary dependency, e.g. solving the many-dependent-jobs problem
+      (M: worker jobs, N: jobs waiting for other jobs; M &lt;&lt; N).
+    </p>
+<p>
+      Each (logical) processor of a dedicated processor set (configurable) gets a
+      worker-thread assigned. Each worker-thread runs a fiber-pool (launch policy
+      is customizable). A submitted job is always executed by a worker-fiber. By
+      using <span class="bold"><strong>Boost.Fiber</strong></span> jobs are scheduled cooperatively
+      so that a job can yield to other jobs during its execution. Jobs can be synchronized
+      via primitives like mutex's, conditions, barriers and channels (message exchange)
+      from <span class="bold"><strong>Boost.Fiber</strong></span> without blocking the worker-thread.
+      Fibers provide a fast context switch.
+    </p>
+<p>
+      <span class="bold"><strong>Boost.Job</strong></span> supports to inspect the NUMA topology
+      (e.g. which logical processors are online, and which processors share L1/L2/L3
+      cache). This information can be used to select a appropriate processor for
+      a job. For a fast access to job related data, <span class="bold"><strong>Boost.Job</strong></span>
+      provides functions and classes to allocate memory on NUMA nodes <sup>[<a name="job.overview.f1" href="#ftn.job.overview.f1" class="footnote">2</a>]</sup>.
+    </p>
+<p>
+      In order to use the classes and functions described here, you can either include
+      the specific headers specified by the descriptions of each class or function,
+      or include the master library header:
+    </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">job</span><span class="special">/</span><span class="identifier">all</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+</pre>
+<p>
+      which includes all the other headers in turn.
+    </p>
+<p>
+      The namespaces used are:
+    </p>
+<pre class="programlisting"><span class="keyword">namespace</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">jobs</span>
+<span class="keyword">namespace</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">jobs</span><span class="special">::</span><span class="identifier">this_worker</span>
+</pre>
+<div class="warning"><table border="0" summary="Warning">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Warning]" src="../../../../../doc/src/images/warning.png"></td>
+<th align="left">Warning</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        This library is <span class="emphasis"><em>not</em></span> an official Boost library
+      </p></td></tr>
+</table></div>
+<p>
+      <span class="bold"><strong>Boost.Job</strong></span> depends upon <span class="bold"><strong>Boost.Fiber</strong></span>.
+      Boost version 1.59.0 or greater is required.
+    </p>
+<p>
+      [info This library is C++14-only!]
+    </p>
+<div class="footnotes">
+<br><hr width="100" align="left">
+<div class="footnote"><p><sup>[<a name="ftn.job.overview.f0" href="#job.overview.f0" class="para">1</a>] </sup>
+        A job is a small unit of code that can be executed independently and parallel,
+        e.g. it's a fain-grained work item
+      </p></div>
+<div class="footnote"><p><sup>[<a name="ftn.job.overview.f1" href="#job.overview.f1" class="para">2</a>] </sup>
+        processors of a NUMA node share cache and have a faster access to its associated
+        memory bank than processors of other nodes.
+      </p></div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Oliver Kowalke<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../index.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="job_mgmt.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

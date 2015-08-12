@@ -1,0 +1,217 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class scheduler</title>
+<link rel="stylesheet" href="../../../../../../doc/src/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="../../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="up" href="../job_mgmt.html" title="Job management">
+<link rel="prev" href="../job_mgmt.html" title="Job management">
+<link rel="next" href="this_worker.html" title="Namespace this_worker">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr>
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../../../boost.png"></td>
+<td align="center"><a href="../../../../../../index.html">Home</a></td>
+<td align="center"><a href="../../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
+<td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
+<td align="center"><a href="../../../../../../more/index.htm">More</a></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../job_mgmt.html"><img src="../../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../job_mgmt.html"><img src="../../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="this_worker.html"><img src="../../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="job.job_mgmt.scheduler"></a><a name="class_scheduler"></a><a class="link" href="scheduler.html" title="Class scheduler">Class
+      <code class="computeroutput"><span class="identifier">scheduler</span></code></a>
+</h3></div></div></div>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">job</span><span class="special">/</span><span class="identifier">scheduler</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">class</span> <span class="identifier">scheduler</span> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">FiberPool</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">StackAllocator</span> <span class="special">&gt;</span>
+    <span class="identifier">scheduler</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">topo_t</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">topology</span><span class="special">,</span> <span class="identifier">FiberPool</span> <span class="special">&amp;&amp;</span> <span class="identifier">pool</span><span class="special">,</span> <span class="identifier">StackAllocator</span> <span class="identifier">salloc</span><span class="special">);</span>
+
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">FiberPool</span> <span class="special">&gt;</span>
+    <span class="identifier">scheduler</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">topo_t</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">topology</span><span class="special">,</span> <span class="identifier">FiberPool</span> <span class="special">&amp;&amp;</span> <span class="identifier">pool</span><span class="special">);</span>
+
+    <span class="identifier">scheduler</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">topo_t</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">topology</span><span class="special">);</span>
+
+    <span class="special">~</span><span class="identifier">scheduler</span><span class="special">()</span> <span class="keyword">noexcept</span><span class="special">;</span>
+
+    <span class="identifier">scheduler</span><span class="special">(</span> <span class="identifier">scheduler</span> <span class="keyword">const</span><span class="special">&amp;)</span> <span class="special">=</span> <span class="keyword">delete</span><span class="special">;</span>
+
+    <span class="identifier">scheduler</span> <span class="special">&amp;</span> <span class="keyword">operator</span><span class="special">=(</span> <span class="identifier">scheduler</span> <span class="keyword">const</span><span class="special">&amp;)</span> <span class="special">=</span> <span class="keyword">delete</span><span class="special">;</span>
+
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Allocator</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+    <span class="identifier">submit_preempt</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">allocator_arg_t</span><span class="special">,</span> <span class="identifier">Allocator</span> <span class="identifier">alloc</span><span class="special">,</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+    <span class="identifier">submit_preempt</span><span class="special">(</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Allocator</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+    <span class="identifier">fibers</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">&amp;&amp;(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+    <span class="identifier">submit_coop</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">allocator_arg_t</span><span class="special">,</span> <span class="identifier">Allocator</span> <span class="identifier">alloc</span><span class="special">,</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+    <span class="identifier">fibers</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+    <span class="identifier">submit_coop</span><span class="special">(</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+
+    <span class="keyword">void</span> <span class="identifier">shutdown</span><span class="special">();</span>
+<span class="special">};</span>
+</pre>
+<h5>
+<a name="job.job_mgmt.scheduler.h0"></a>
+        <span><a name="job.job_mgmt.scheduler.constructor"></a></span><a class="link" href="scheduler.html#job.job_mgmt.scheduler.constructor">Constructor</a>
+      </h5>
+<pre class="programlisting"><span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">FiberPool</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">StackAllocator</span> <span class="special">&gt;</span>
+<span class="identifier">scheduler</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">topo_t</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">topology</span><span class="special">,</span> <span class="identifier">FiberPool</span> <span class="special">&amp;&amp;</span> <span class="identifier">pool</span><span class="special">,</span> <span class="identifier">StackAllocator</span> <span class="identifier">salloc</span><span class="special">);</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">FiberPool</span> <span class="special">&gt;</span>
+<span class="identifier">scheduler</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">topo_t</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">topology</span><span class="special">,</span> <span class="identifier">FiberPool</span> <span class="special">&amp;&amp;</span> <span class="identifier">pool</span><span class="special">);</span>
+
+<span class="identifier">scheduler</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">topo_t</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">topology</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Depending on parameter <code class="computeroutput"><span class="identifier">topology</span></code>,
+              <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">threads</span></code> are created and pinned to
+              the logical processors. Depending on the FiberPool strategy, <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">fibers</span></code> are launched.
+            </p></dd>
+<dt><span class="term">Note:</span></dt>
+<dd><p>
+              StackAllocator is required to allocate a stack for the internal <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">fibers</span></code>. If StackAllocator is not
+              explicitly passed, a <a class="link" href="../stack.html#class_numa_fixedsize_stack"> <code class="computeroutput">numa_fixedsize_stack</code></a> is
+              used by default. <a class="link" href="../pools/static_pool.html#class_static_pool"> <code class="computeroutput">static_pool&lt;&gt;</code></a> for 64 <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">fibers</span></code> is used if no FiberPool is
+              specified
+            </p></dd>
+</dl>
+</div>
+<h5>
+<a name="job.job_mgmt.scheduler.h1"></a>
+        <span><a name="job.job_mgmt.scheduler.destructor"></a></span><a class="link" href="scheduler.html#job.job_mgmt.scheduler.destructor">Destructor</a>
+      </h5>
+<pre class="programlisting"><span class="special">~</span><span class="identifier">scheduler</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins the worker-fibers and -threads.
+            </p></dd>
+<dt><span class="term">Throws:</span></dt>
+<dd><p>
+              Nothing.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="scheduler_submit_preempt_bridgehead"></a>
+  <span><a name="scheduler_submit_preempt"></a></span>
+  <a class="link" href="scheduler.html#scheduler_submit_preempt">Templated
+        member function <code class="computeroutput">submit_preempt</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Allocator</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+<span class="identifier">submit_preempt</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">allocator_arg_t</span><span class="special">,</span> <span class="identifier">Allocator</span> <span class="identifier">alloc</span><span class="special">,</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+<span class="identifier">submit_preempt</span><span class="special">(</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Returns:</span></dt>
+<dd><p>
+              a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span></code> associated with the job.
+            </p></dd>
+<dt><span class="term">Note:</span></dt>
+<dd><p>
+              The job is executed by the worker-thread running on logical processor
+              <code class="computeroutput"><span class="identifier">cpuid</span></code>. If no Allocator
+              is passed, <a class="link" href="../numa/numa_allocator.html#class_numa_allocator"> <code class="computeroutput">numa_allocator&lt;&gt;</code></a> is used.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="scheduler_submit_coop_bridgehead"></a>
+  <span><a name="scheduler_submit_coop"></a></span>
+  <a class="link" href="scheduler.html#scheduler_submit_coop">Templated
+        member function <code class="computeroutput">submit_coop</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+<span class="identifier">submit_preempt</span><span class="special">(</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Allocator</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+<span class="identifier">fibers</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">&amp;&amp;(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+<span class="identifier">submit_coop</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">allocator_arg_t</span><span class="special">,</span> <span class="identifier">Allocator</span> <span class="identifier">alloc</span><span class="special">,</span> <span class="identifier">uint32_t</span> <span class="identifier">cpuid</span><span class="special">,</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Returns:</span></dt>
+<dd><p>
+              a <code class="computeroutput"><span class="identifier">boost</span><span class="special">:.</span><span class="identifier">fibers</span><span class="special">::</span><span class="identifier">future</span></code> associated with the job.
+            </p></dd>
+<dt><span class="term">Note:</span></dt>
+<dd><p>
+              The job is executed by the worker-thread running on logical processor
+              <code class="computeroutput"><span class="identifier">cpuid</span></code>. If no Allocator
+              is passed, <a class="link" href="../numa/numa_allocator.html#class_numa_allocator"> <code class="computeroutput">numa_allocator&lt;&gt;</code></a> is used.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="scheduler_shutdown_bridgehead"></a>
+  <span><a name="scheduler_shutdown"></a></span>
+  <a class="link" href="scheduler.html#scheduler_shutdown">Member function
+        <code class="computeroutput">shutdown</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">shutdown</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins worker-fibers and -threads.
+            </p></dd>
+</dl>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Oliver Kowalke<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../job_mgmt.html"><img src="../../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../job_mgmt.html"><img src="../../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="this_worker.html"><img src="../../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

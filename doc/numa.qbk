@@ -23,14 +23,14 @@
 
     }}
 
-__boost_job__ offers functionallity to allocate physical memory on
+__boost_job__ offers functionality to allocate physical memory on
 the memory banks of a NUMA note [footnote NUMA == non-uniform memory access],
 to which a logical processor belongs.
 This feature can be used to reduce the latency of memory access, e.g. data 
 is allocated on physical memory near the logical processor.
 For instance __nfixedsize_stack__ allocates the stacks of the worker-fibers on
-the physical memory belonging to the NUMA node of the deticated logical processor
-(the worker-thread is pinend to).
+the physical memory belonging to the NUMA node of the dedicated logical processor
+(the worker-thread is pinned to).
 
 [#class_numa_allocator]
 [section:numa_allocator Class `numa_allocator`]

@@ -1,0 +1,290 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Rational</title>
+<link rel="stylesheet" href="../../../../../doc/src/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="prev" href="numa/numa_allocator.html" title="Class numa_allocator">
+<link rel="next" href="todo.html" title="TODO">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr>
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../../boost.png"></td>
+<td align="center"><a href="../../../../../index.html">Home</a></td>
+<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
+<td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
+<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="numa/numa_allocator.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="todo.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="job.rational"></a><a class="link" href="rational.html" title="Rational">Rational</a>
+</h2></div></div></div>
+<h4>
+<a name="job.rational.h0"></a>
+      <span><a name="job.rational.tested_compilers"></a></span><a class="link" href="rational.html#job.rational.tested_compilers">tested
+      compilers</a>
+    </h4>
+<p>
+      The library was tested with GCC-5.1.1, Clang-3.6.0 and MSVC-14.0 in c++14-mode.
+    </p>
+<h4>
+<a name="job.rational.h1"></a>
+      <span><a name="job.rational.supported_architectures"></a></span><a class="link" href="rational.html#job.rational.supported_architectures">supported
+      architectures</a>
+    </h4>
+<p>
+      <span class="bold"><strong>Boost.Fiber</strong></span> depends on <a href="../../../../../libs/context/index.html" target="_top">Boost.Context</a>
+      - the list of supported architectures can be found <a href="../../../../../libs/context/doc/html/context/architectures.html" target="_top">here</a>.
+    </p>
+<h4>
+<a name="job.rational.h2"></a>
+      <span><a name="job.rational.numa_support"></a></span><a class="link" href="rational.html#job.rational.numa_support">NUMA
+      support</a>
+    </h4>
+<div class="table">
+<a name="job.rational.numa_support0"></a><p class="title"><b>Table&#160;1.1.&#160;NUMA support</b></p>
+<div class="table-contents"><table class="table" summary="NUMA support">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+              <p>
+                OS
+              </p>
+            </th>
+<th>
+              <p>
+                processor topology
+              </p>
+            </th>
+<th>
+              <p>
+                memory allocation on NUMA node
+              </p>
+            </th>
+<th>
+              <p>
+                pin thread to logical processor
+              </p>
+            </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+              <p>
+                Linux
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                Windows
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                AIX
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                -<sup>[<a name="job.rational.f0" href="#ftn.job.rational.f0" class="footnote">a</a>]</sup>
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                HP/UX
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                -<sup>[<a name="job.rational.f1" href="#ftn.job.rational.f1" class="footnote">b</a>]</sup>
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                Solaris
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                -<sup>[<a name="job.rational.f2" href="#ftn.job.rational.f2" class="footnote">c</a>]</sup>
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                FreeBSD
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+<td>
+              <p>
+                -<sup>[<a name="job.rational.f3" href="#ftn.job.rational.f3" class="footnote">d</a>]</sup>
+              </p>
+            </td>
+<td>
+              <p>
+                +
+              </p>
+            </td>
+</tr>
+<tr>
+<td>
+              <p>
+                MacOS X
+              </p>
+            </td>
+<td>
+              <p>
+                -
+              </p>
+            </td>
+<td>
+              <p>
+                -
+              </p>
+            </td>
+<td>
+              <p>
+                -
+              </p>
+            </td>
+</tr>
+</tbody>
+<tbody class="footnotes"><tr><td colspan="4">
+<div class="footnote"><p><sup>[<a name="ftn.job.rational.f0" href="#job.rational.f0" class="para">a</a>] </sup>
+                  incomplete/mapped to malloc()/free()
+                </p></div>
+<div class="footnote"><p><sup>[<a name="ftn.job.rational.f1" href="#job.rational.f1" class="para">b</a>] </sup>
+                  incomplete/mapped to malloc()/free()
+                </p></div>
+<div class="footnote"><p><sup>[<a name="ftn.job.rational.f2" href="#job.rational.f2" class="para">c</a>] </sup>
+                  incomplete/mapped to malloc()/free()
+                </p></div>
+<div class="footnote"><p><sup>[<a name="ftn.job.rational.f3" href="#job.rational.f3" class="para">d</a>] </sup>
+                  implementation of NUMA support inside FreeBSD ongoing
+                </p></div>
+</td></tr></tbody>
+</table></div>
+</div>
+<br class="table-break"><h4>
+<a name="job.rational.h3"></a>
+      <span><a name="job.rational.notes_to_windows"></a></span><a class="link" href="rational.html#job.rational.notes_to_windows">Notes
+      to Windows</a>
+    </h4>
+<p>
+      On Windows logical processors are identified by a Goup ID (up to 64 processors
+      in one group) and a processor ID (represented by 64bit bitmask). The value
+      for <code class="computeroutput"><span class="identifier">topo_t</span><span class="special">::</span><span class="identifier">processor_id</span></code> is computed by <span class="emphasis"><em>group_id*64
+      + position of logical processor in the bitmask</em></span>.
+    </p>
+<h4>
+<a name="job.rational.h4"></a>
+      <span><a name="job.rational.scheduling"></a></span><a class="link" href="rational.html#job.rational.scheduling">Scheduling</a>
+    </h4>
+<p>
+      The decision to which logical processor a new job has to be scheduled has to
+      be made by made by the code using <span class="bold"><strong>Boost.Job</strong></span>.
+      The application using <span class="bold"><strong>Boost.Job</strong></span> has a better
+      understanding of the job-graph (for instance which jobs depend on each other,
+      on which physical memory bank is the processed data allocated etc.).
+    </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Oliver Kowalke<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="numa/numa_allocator.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="todo.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

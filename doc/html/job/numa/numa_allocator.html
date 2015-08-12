@@ -1,0 +1,386 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class numa_allocator</title>
+<link rel="stylesheet" href="../../../../../../doc/src/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="../../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="up" href="../numa.html" title="NUMA">
+<link rel="prev" href="../numa.html" title="NUMA">
+<link rel="next" href="../rational.html" title="Rational">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr>
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../../../boost.png"></td>
+<td align="center"><a href="../../../../../../index.html">Home</a></td>
+<td align="center"><a href="../../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
+<td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
+<td align="center"><a href="../../../../../../more/index.htm">More</a></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../numa.html"><img src="../../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../numa.html"><img src="../../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="../rational.html"><img src="../../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="job.numa.numa_allocator"></a><a name="class_numa_allocator"></a><a class="link" href="numa_allocator.html" title="Class numa_allocator">Class
+      <code class="computeroutput"><span class="identifier">numa_allocator</span></code></a>
+</h3></div></div></div>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">job</span><span class="special">/</span><span class="identifier">memory</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">T</span> <span class="special">&gt;</span>
+<span class="keyword">class</span> <span class="identifier">numa_allocator</span> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+    <span class="comment">// type definitions</span>
+    <span class="keyword">typedef</span> <span class="identifier">T</span>               <span class="identifier">value_type</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">T</span>           <span class="special">*</span>   <span class="identifier">pointer</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">T</span>       <span class="keyword">const</span><span class="special">*</span>  <span class="identifier">const_pointer</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">T</span>           <span class="special">&amp;</span>   <span class="identifier">reference</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">T</span>       <span class="keyword">const</span><span class="special">&amp;</span>  <span class="identifier">const_reference</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span>     <span class="identifier">size_type</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>  <span class="identifier">difference_type</span><span class="special">;</span>
+
+    <span class="comment">// rebind allocator to type U</span>
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">U</span> <span class="special">&gt;</span>
+    <span class="keyword">struct</span> <span class="identifier">rebind</span><span class="special">;</span>
+
+    <span class="identifier">numa_allocator</span><span class="special">(</span> <span class="identifier">uint32_t</span> <span class="identifier">node_id</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+
+    <span class="identifier">numa_allocator</span><span class="special">(</span> <span class="identifier">numa_allocator</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">other</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+
+    <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">U</span> <span class="special">&gt;</span>
+    <span class="identifier">numa_allocator</span><span class="special">(</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">other</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+
+    <span class="special">~</span><span class="identifier">numa_allocator</span><span class="special">()</span> <span class="special">=</span> <span class="keyword">default</span><span class="special">;</span>
+
+    <span class="identifier">pointer</span> <span class="identifier">address</span><span class="special">(</span> <span class="identifier">reference</span> <span class="identifier">value</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="identifier">const_pointer</span> <span class="identifier">address</span><span class="special">(</span> <span class="identifier">const_reference</span> <span class="identifier">value</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+    <span class="identifier">size_type</span> <span class="identifier">max_size</span><span class="special">()</span> <span class="keyword">const</span> <span class="keyword">throw</span><span class="special">();</span>
+
+    <span class="identifier">pointer</span> <span class="identifier">allocate</span><span class="special">(</span> <span class="identifier">size_type</span> <span class="identifier">num</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">void</span> <span class="special">*</span> <span class="special">=</span> <span class="number">0</span><span class="special">);</span>
+
+    <span class="keyword">void</span> <span class="identifier">construct</span><span class="special">(</span> <span class="identifier">pointer</span> <span class="identifier">p</span><span class="special">,</span> <span class="identifier">T</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">value</span><span class="special">);</span>
+
+    <span class="keyword">void</span> <span class="identifier">destroy</span><span class="special">(</span> <span class="identifier">pointer</span> <span class="identifier">p</span><span class="special">);</span>
+
+    <span class="keyword">void</span> <span class="identifier">deallocate</span><span class="special">(</span> <span class="identifier">pointer</span> <span class="identifier">p</span><span class="special">,</span> <span class="identifier">size_type</span> <span class="identifier">num</span><span class="special">);</span>
+<span class="special">};</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">T1</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">T2</span> <span class="special">&gt;</span>
+<span class="keyword">bool</span> <span class="keyword">operator</span><span class="special">==(</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T1</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">l</span><span class="special">,</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">r</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">T1</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">T2</span> <span class="special">&gt;</span>
+<span class="keyword">bool</span> <span class="keyword">operator</span><span class="special">!=(</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T1</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">l</span><span class="special">,</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">r</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+
+<span class="keyword">void</span> <span class="special">*</span> <span class="identifier">numa_alloc</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">size</span><span class="special">,</span> <span class="identifier">uint32_t</span> <span class="identifier">node_id</span><span class="special">);</span>
+
+<span class="keyword">void</span> <span class="identifier">numa_free</span><span class="special">(</span> <span class="keyword">void</span> <span class="special">*</span> <span class="identifier">p</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">size</span><span class="special">);</span>
+</pre>
+<h5>
+<a name="job.numa.numa_allocator.h0"></a>
+        <span><a name="job.numa.numa_allocator.constructor"></a></span><a class="link" href="numa_allocator.html#job.numa.numa_allocator.constructor">Constructor</a>
+      </h5>
+<pre class="programlisting"><span class="identifier">numa_allocator</span><span class="special">(</span> <span class="identifier">uint32_t</span> <span class="identifier">node_id</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Depending on parameter <code class="computeroutput"><span class="identifier">topology</span></code>,
+              <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">threads</span></code> are created and pinned to
+              the logical processors. Depending on the FiberPool strategy, <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">fibers</span></code> are launched.
+            </p></dd>
+<dt><span class="term">Note:</span></dt>
+<dd><p>
+              Nothing.
+            </p></dd>
+</dl>
+</div>
+<h5>
+<a name="job.numa.numa_allocator.h1"></a>
+        <span><a name="job.numa.numa_allocator.destructor"></a></span><a class="link" href="numa_allocator.html#job.numa.numa_allocator.destructor">Destructor</a>
+      </h5>
+<pre class="programlisting"><span class="special">~</span><span class="identifier">numa_allocator</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Destructs allocator.
+            </p></dd>
+<dt><span class="term">Throws:</span></dt>
+<dd><p>
+              Nothing.
+            </p></dd>
+</dl>
+</div>
+<h5>
+<a name="job.numa.numa_allocator.h2"></a>
+        <span><a name="job.numa.numa_allocator.copy_constructor"></a></span><a class="link" href="numa_allocator.html#job.numa.numa_allocator.copy_constructor">Copy
+        Constructor</a>
+      </h5>
+<pre class="programlisting"><span class="identifier">numa_allocator</span><span class="special">(</span> <span class="identifier">numa_allocator</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">other</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">U</span> <span class="special">&gt;</span>
+<span class="identifier">numa_allocator</span><span class="special">(</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">other</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Destructs allocator.
+            </p></dd>
+<dt><span class="term">Throws:</span></dt>
+<dd><p>
+              Nothing.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_allocator_address_bridgehead"></a>
+  <span><a name="numa_allocator_address"></a></span>
+  <a class="link" href="numa_allocator.html#numa_allocator_address">Member
+        function <code class="computeroutput">address</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="identifier">pointer</span> <span class="identifier">address</span><span class="special">(</span> <span class="identifier">reference</span> <span class="identifier">value</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="identifier">const_pointer</span> <span class="identifier">address</span><span class="special">(</span> <span class="identifier">const_reference</span> <span class="identifier">value</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins worker-fibers and -threads.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_allocator_max_size_bridgehead"></a>
+  <span><a name="numa_allocator_max_size"></a></span>
+  <a class="link" href="numa_allocator.html#numa_allocator_max_size">Member
+        function <code class="computeroutput">max_size</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="identifier">size_type</span> <span class="identifier">max_size</span><span class="special">()</span> <span class="keyword">const</span> <span class="keyword">throw</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins worker-fibers and -threads.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_allocator_allocate_bridgehead"></a>
+  <span><a name="numa_allocator_allocate"></a></span>
+  <a class="link" href="numa_allocator.html#numa_allocator_allocate">Member
+        function <code class="computeroutput">allocate</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="identifier">pointer</span> <span class="identifier">allocate</span><span class="special">(</span> <span class="identifier">size_type</span> <span class="identifier">num</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">void</span> <span class="special">*</span> <span class="special">=</span> <span class="number">0</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins worker-fibers and -threads.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_allocator_construct_bridgehead"></a>
+  <span><a name="numa_allocator_construct"></a></span>
+  <a class="link" href="numa_allocator.html#numa_allocator_construct">Member
+        function <code class="computeroutput">construct</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">construct</span><span class="special">(</span> <span class="identifier">pointer</span> <span class="identifier">p</span><span class="special">,</span> <span class="identifier">T</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">value</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins worker-fibers and -threads.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_allocator_destroy_bridgehead"></a>
+  <span><a name="numa_allocator_destroy"></a></span>
+  <a class="link" href="numa_allocator.html#numa_allocator_destroy">Member
+        function <code class="computeroutput">destroy</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">destroy</span><span class="special">(</span> <span class="identifier">pointer</span> <span class="identifier">p</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins worker-fibers and -threads.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_allocator_deallocate_bridgehead"></a>
+  <span><a name="numa_allocator_deallocate"></a></span>
+  <a class="link" href="numa_allocator.html#numa_allocator_deallocate">Member
+        function <code class="computeroutput">deallocate</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">deallocate</span><span class="special">(</span> <span class="identifier">pointer</span> <span class="identifier">p</span><span class="special">,</span> <span class="identifier">size_type</span> <span class="identifier">num</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Interrupts and joins worker-fibers and -threads.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="id_operator_equal_bridgehead"></a>
+  <span><a name="id_operator_equal"></a></span>
+  <a class="link" href="numa_allocator.html#id_operator_equal">Member function
+        <code class="computeroutput">operator==</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">T1</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">T2</span> <span class="special">&gt;</span>
+<span class="keyword">bool</span> <span class="keyword">operator</span><span class="special">==(</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T1</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">l</span><span class="special">,</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">r</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Returns:</span></dt>
+<dd><p>
+              <code class="computeroutput"><span class="keyword">true</span></code> if <code class="computeroutput"><span class="special">*</span><span class="keyword">this</span></code>
+              and <code class="computeroutput"><span class="identifier">other</span></code> allocate
+              memory for the same NUMA node, <code class="computeroutput"><span class="keyword">false</span></code>
+              otherwise.
+            </p></dd>
+<dt><span class="term">Throws:</span></dt>
+<dd><p>
+              Nothing.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="id_operator_not_equal_bridgehead"></a>
+  <span><a name="id_operator_not_equal"></a></span>
+  <a class="link" href="numa_allocator.html#id_operator_not_equal">Member
+        function <code class="computeroutput">operator!=</code>()</a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">T1</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">T2</span> <span class="special">&gt;</span>
+<span class="keyword">bool</span> <span class="keyword">operator</span><span class="special">!=(</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T1</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">l</span><span class="special">,</span> <span class="identifier">numa_allocator</span><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="keyword">const</span><span class="special">&amp;</span> <span class="identifier">r</span><span class="special">)</span> <span class="keyword">throw</span><span class="special">();</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Returns:</span></dt>
+<dd><p>
+              <code class="computeroutput">! (other == * this)</code>
+            </p></dd>
+<dt><span class="term">Throws:</span></dt>
+<dd><p>
+              Nothing.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_alloc_bridgehead"></a>
+  <span><a name="numa_alloc"></a></span>
+  <a class="link" href="numa_allocator.html#numa_alloc">Non-member function <code class="computeroutput">numa_alloc()</code></a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="special">*</span> <span class="identifier">numa_alloc</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">size</span><span class="special">,</span> <span class="identifier">uint32_t</span> <span class="identifier">node_id</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Allocates memory of <code class="computeroutput"><span class="identifier">size</span></code>
+              on NUMA node <code class="computeroutput"><span class="identifier">node_id</span></code>.
+            </p></dd>
+<dt><span class="term">Returns:</span></dt>
+<dd><p>
+              A pointer to the first address of the allocated memory.
+            </p></dd>
+</dl>
+</div>
+<p>
+        </p>
+<h5>
+<a name="numa_free_bridgehead"></a>
+  <span><a name="numa_free"></a></span>
+  <a class="link" href="numa_allocator.html#numa_free">Non-member function <code class="computeroutput">numa_free()</code></a>
+</h5>
+<p>
+      </p>
+<pre class="programlisting"><span class="keyword">void</span> <span class="identifier">numa_free</span><span class="special">(</span> <span class="keyword">void</span> <span class="special">*</span> <span class="identifier">p</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <span class="identifier">size</span><span class="special">);</span>
+</pre>
+<div class="variablelist">
+<p class="title"><b></b></p>
+<dl>
+<dt><span class="term">Effects:</span></dt>
+<dd><p>
+              Deallocates memory <code class="computeroutput"><span class="identifier">p</span></code>
+              is pointing to.
+            </p></dd>
+</dl>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Oliver Kowalke<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../numa.html"><img src="../../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../numa.html"><img src="../../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="../rational.html"><img src="../../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

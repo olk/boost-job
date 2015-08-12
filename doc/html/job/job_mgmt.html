@@ -1,0 +1,155 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Job management</title>
+<link rel="stylesheet" href="../../../../../doc/src/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="prev" href="overview.html" title="Overview">
+<link rel="next" href="job_mgmt/scheduler.html" title="Class scheduler">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr>
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../../boost.png"></td>
+<td align="center"><a href="../../../../../index.html">Home</a></td>
+<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
+<td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
+<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="overview.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="job_mgmt/scheduler.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="job.job_mgmt"></a><a class="link" href="job_mgmt.html" title="Job management">Job management</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="job_mgmt/scheduler.html">Class
+      <code class="computeroutput"><span class="identifier">scheduler</span></code></a></span></dt>
+<dt><span class="section"><a href="job_mgmt/this_worker.html">Namespace this_worker</a></span></dt>
+</dl></div>
+<h4>
+<a name="job.job_mgmt.h0"></a>
+      <span><a name="job.job_mgmt.synopsis"></a></span><a class="link" href="job_mgmt.html#job.job_mgmt.synopsis">Synopsis</a>
+    </h4>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">job</span><span class="special">/</span><span class="identifier">all</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">namespace</span> <span class="identifier">boost</span> <span class="special">{</span>
+<span class="keyword">namespace</span> <span class="identifier">jobs</span> <span class="special">{</span>
+
+<span class="keyword">class</span> <span class="identifier">scheduler</span><span class="special">;</span>
+
+<span class="keyword">namespace</span> <span class="identifier">this_worker</span> <span class="special">{</span>
+
+<span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">Fn</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">...</span> <span class="identifier">Args</span> <span class="special">&gt;</span>
+<span class="identifier">fibers</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">Fn</span><span class="special">(</span> <span class="identifier">Args</span> <span class="special">...</span> <span class="special">)</span> <span class="special">&gt;::</span><span class="identifier">type</span> <span class="special">&gt;</span>
+<span class="identifier">submit</span><span class="special">(</span> <span class="identifier">Fn</span> <span class="special">&amp;&amp;</span> <span class="identifier">fn</span><span class="special">,</span> <span class="identifier">Args</span> <span class="special">&amp;&amp;</span> <span class="special">...</span> <span class="identifier">args</span><span class="special">);</span>
+
+<span class="special">}}}</span>
+</pre>
+<p>
+      A job is a small unit of code that can be executed independently and parallel,
+      e.g. it's a fain-grained work item. Each job is executed by a worker-fiber
+      running in a worker-thread, thus jobs are scheduled cooperatively so that a
+      job can yield to other jobs during its execution. The result of a job is transported
+      via a future.
+    </p>
+<p>
+      The worker-thread is pinned to the logical processor, e.g. the Operating System
+      Scheduler does not schedule the thread to another processor.
+    </p>
+<p>
+      Class <a class="link" href="job_mgmt/scheduler.html#class_scheduler"> <code class="computeroutput">scheduler</code></a> manages the worker-fibers (creating and pinning
+      on logical processor) and gives access to the different worker-threads via
+      <a class="link" href="job_mgmt/scheduler.html#scheduler_submit_preempt"> <code class="computeroutput">scheduler::submit_preempt()</code></a> and <a class="link" href="job_mgmt/scheduler.html#scheduler_submit_coop"> <code class="computeroutput">scheduler::submit_coop()</code></a>.
+      The worker-threads and their worker-fibers are interrupted and joined by calling
+      <a class="link" href="job_mgmt/scheduler.html#scheduler_shutdown"> <code class="computeroutput">scheduler::shutdown()</code></a>.
+    </p>
+<pre class="programlisting"><span class="comment">// create scheduler, each worker-thread runs 3 worker-fibers</span>
+<span class="identifier">boost</span><span class="special">::</span><span class="identifier">jobs</span><span class="special">::</span><span class="identifier">scheduler</span> <span class="identifier">s</span><span class="special">(</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">jobs</span><span class="special">::</span><span class="identifier">cpu_topology</span><span class="special">(),</span>
+                          <span class="identifier">boost</span><span class="special">::</span><span class="identifier">jobs</span><span class="special">::</span><span class="identifier">static_pool</span><span class="special">&lt;</span> <span class="number">3</span> <span class="special">&gt;()</span> <span class="special">);</span>
+<span class="keyword">int</span> <span class="identifier">n</span> <span class="special">=</span> <span class="number">10</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">int</span> <span class="special">&gt;</span> <span class="identifier">f</span> <span class="special">=</span> <span class="identifier">s</span><span class="special">.</span><span class="identifier">submit_preempt</span><span class="special">(</span>
+          <span class="number">0</span><span class="special">,</span> <span class="comment">// execute job on logical processor `0`</span>
+          <span class="comment">// pass job-function</span>
+          <span class="special">[</span><span class="identifier">n</span><span class="special">](){</span>
+              <span class="keyword">int</span> <span class="identifier">first</span> <span class="special">=</span> <span class="number">1</span><span class="special">,</span> <span class="identifier">second</span> <span class="special">=</span> <span class="number">1</span><span class="special">,</span> <span class="identifier">third</span> <span class="special">=</span> <span class="special">-</span><span class="number">1</span><span class="special">;</span>
+              <span class="keyword">for</span> <span class="special">(</span> <span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">2</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">n</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+                  <span class="identifier">third</span> <span class="special">=</span> <span class="identifier">first</span> <span class="special">+</span> <span class="identifier">second</span><span class="special">;</span>
+                  <span class="identifier">first</span> <span class="special">=</span> <span class="identifier">second</span><span class="special">;</span>
+                  <span class="identifier">second</span> <span class="special">=</span> <span class="identifier">third</span><span class="special">;</span>
+              <span class="special">}</span>
+              <span class="keyword">return</span> <span class="identifier">third</span><span class="special">;</span>
+          <span class="special">});</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"fibonacci("</span> <span class="special">&lt;&lt;</span> <span class="identifier">n</span> <span class="special">&lt;&lt;</span> <span class="string">") = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">f</span><span class="special">.</span><span class="identifier">get</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"main: done"</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+</pre>
+<p>
+      Exception thrown inside the job function are catched and transported via the
+      returned future.
+    </p>
+<p>
+      Jobs can be synchronized (without blocking the worker-thread) by using synchronization
+      objects (like mutex, condition_variables ...) from <span class="bold"><strong>Boost.Fiber</strong></span>.
+      For instance a job can wait for the result of a sub-job using <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">fibers</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;&gt;</span></code> (spawning sub-job by calling <a class="link" href="job_mgmt/scheduler.html#scheduler_submit_coop"> <code class="computeroutput">scheduler::submit_coop()</code></a>)
+      without blocking the worker-thread on which it is executed. It doesn't matter
+      to which logical processor the sub-job was submitted.
+    </p>
+<pre class="programlisting"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">jobs</span><span class="special">::</span><span class="identifier">scheduler</span> <span class="identifier">s</span><span class="special">(</span> <span class="identifier">topo</span><span class="special">,</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">jobs</span><span class="special">::</span><span class="identifier">static_pool</span><span class="special">&lt;</span> <span class="number">2</span> <span class="special">&gt;()</span> <span class="special">);</span>
+<span class="identifier">boost</span><span class="special">::</span><span class="identifier">fibers</span><span class="special">::</span><span class="identifier">mutex</span> <span class="identifier">mtx</span><span class="special">;</span>
+<span class="identifier">boost</span><span class="special">::</span><span class="identifier">fibers</span><span class="special">::</span><span class="identifier">condition_variable</span> <span class="identifier">cond</span><span class="special">;</span>
+<span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">void</span> <span class="special">&gt;</span> <span class="identifier">f1</span> <span class="special">=</span> <span class="identifier">s</span><span class="special">.</span><span class="identifier">submit_preempt</span><span class="special">(</span> <span class="identifier">topo</span><span class="special">[</span><span class="number">0</span><span class="special">].</span><span class="identifier">processor_id</span><span class="special">,</span>
+          <span class="special">[&amp;</span><span class="identifier">mtx</span><span class="special">,&amp;</span><span class="identifier">cond</span><span class="special">,</span> <span class="special">&amp;</span><span class="identifier">i</span><span class="special">](){</span>
+              <span class="comment">// aquire lock on mutex, might be happen before the other jobs tries to acquire lock</span>
+              <span class="identifier">std</span><span class="special">::</span><span class="identifier">unique_lock</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">fibers</span><span class="special">::</span><span class="identifier">mutex</span> <span class="special">&gt;</span> <span class="identifier">lk</span><span class="special">(</span> <span class="identifier">mtx</span><span class="special">);</span>
+              <span class="comment">// wait for synchronizing shared variable `i`</span>
+              <span class="comment">// will suspended current job</span>
+              <span class="comment">// other jobs running on this worker-thread are able be resumed/executed</span>
+              <span class="identifier">cond</span><span class="special">.</span><span class="identifier">wait</span><span class="special">(</span> <span class="identifier">lk</span><span class="special">,</span> <span class="special">[&amp;</span><span class="identifier">i</span><span class="special">](){</span> <span class="keyword">return</span> <span class="number">0</span> <span class="special">!=</span> <span class="identifier">i</span><span class="special">;</span> <span class="special">});</span>
+              <span class="comment">// resumed because notified by other job</span>
+              <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"fiber "</span> <span class="special">&lt;&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">this_fiber</span><span class="special">::</span><span class="identifier">get_id</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="string">": received: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">i</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+          <span class="special">});</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;</span> <span class="keyword">void</span> <span class="special">&gt;</span> <span class="identifier">f2</span> <span class="special">=</span> <span class="identifier">s</span><span class="special">.</span><span class="identifier">submit_preempt</span><span class="special">(</span> <span class="identifier">topo</span><span class="special">[</span><span class="number">1</span><span class="special">].</span><span class="identifier">processor_id</span><span class="special">,</span>
+          <span class="special">[&amp;</span><span class="identifier">mtx</span><span class="special">,&amp;</span><span class="identifier">cond</span><span class="special">,</span> <span class="special">&amp;</span><span class="identifier">i</span><span class="special">](){</span>
+              <span class="comment">// sleep for one seconds</span>
+              <span class="identifier">boost</span><span class="special">::</span><span class="identifier">this_fiber</span><span class="special">::</span><span class="identifier">sleep_for</span><span class="special">(</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">chrono</span><span class="special">::</span><span class="identifier">seconds</span><span class="special">(</span> <span class="number">1</span><span class="special">)</span> <span class="special">);</span>
+              <span class="comment">// aquire lock on mutex</span>
+              <span class="identifier">std</span><span class="special">::</span><span class="identifier">unique_lock</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">fibers</span><span class="special">::</span><span class="identifier">mutex</span> <span class="special">&gt;</span> <span class="identifier">lk</span><span class="special">(</span> <span class="identifier">mtx</span><span class="special">);</span>
+              <span class="comment">// modify shard variable</span>
+              <span class="identifier">i</span> <span class="special">=</span> <span class="number">7</span><span class="special">;</span>
+              <span class="comment">// notify other job</span>
+              <span class="identifier">cond</span><span class="special">.</span><span class="identifier">notify_all</span><span class="special">();</span>
+              <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"fiber "</span> <span class="special">&lt;&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">this_fiber</span><span class="special">::</span><span class="identifier">get_id</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="string">": sent: "</span> <span class="special">&lt;&lt;</span> <span class="identifier">i</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+              <span class="comment">// release lock</span>
+              <span class="identifier">lk</span><span class="special">.</span><span class="identifier">unlock</span><span class="special">();</span>
+          <span class="special">});</span>
+<span class="identifier">f1</span><span class="special">.</span><span class="identifier">wait</span><span class="special">();</span>
+<span class="identifier">f2</span><span class="special">.</span><span class="identifier">wait</span><span class="special">();</span>
+</pre>
+<p>
+      In the example above a mutex and a condition-variable are used to synchronize
+      two jobs running on different logical processors. The worker-threads are not
+      blocked, e.g. if one of the two jobs is waiting for a notification (inside
+      <code class="computeroutput"><span class="identifier">condition_variable</span><span class="special">::</span><span class="identifier">wait</span><span class="special">()</span></code>) other
+      jobs (== worker-fibers) on that logical processor are able to be resumed/executed.
+    </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Oliver Kowalke<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="overview.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="job_mgmt/scheduler.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

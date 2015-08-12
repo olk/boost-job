@@ -1,0 +1,89 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Topology</title>
+<link rel="stylesheet" href="../../../../../doc/src/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.75.2">
+<link rel="home" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="up" href="../index.html" title="Chapter&#160;1.&#160;Job">
+<link rel="prev" href="job_mgmt/this_worker.html" title="Namespace this_worker">
+<link rel="next" href="topology/topo_t.html" title="Class topo_t">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr>
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../../boost.png"></td>
+<td align="center"><a href="../../../../../index.html">Home</a></td>
+<td align="center"><a href="../../../../../libs/libraries.htm">Libraries</a></td>
+<td align="center"><a href="http://www.boost.org/users/people.html">People</a></td>
+<td align="center"><a href="http://www.boost.org/users/faq.html">FAQ</a></td>
+<td align="center"><a href="../../../../../more/index.htm">More</a></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="job_mgmt/this_worker.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="topology/topo_t.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="job.topology"></a><a class="link" href="topology.html" title="Topology">Topology</a>
+</h2></div></div></div>
+<div class="toc"><dl>
+<dt><span class="section"><a href="topology/topo_t.html">Class
+      <code class="computeroutput"><span class="identifier">topo_t</span></code></a></span></dt>
+<dt><span class="section"><a href="topology/this_worker.html">Namespace this_worker</a></span></dt>
+</dl></div>
+<h4>
+<a name="job.topology.h0"></a>
+      <span><a name="job.topology.synopsis"></a></span><a class="link" href="topology.html#job.topology.synopsis">Synopsis</a>
+    </h4>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">job</span><span class="special">/</span><span class="identifier">all</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">namespace</span> <span class="identifier">boost</span> <span class="special">{</span>
+<span class="keyword">namespace</span> <span class="identifier">jobs</span> <span class="special">{</span>
+
+<span class="keyword">struct</span> <span class="identifier">topo_t</span> <span class="special">{</span>
+    <span class="identifier">uint32_t</span>                <span class="identifier">node_id</span><span class="special">;</span>
+    <span class="identifier">uint32_t</span>                <span class="identifier">processor_id</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">set</span><span class="special">&lt;</span> <span class="identifier">uint32_t</span> <span class="special">&gt;</span>    <span class="identifier">l1_shared_with</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">set</span><span class="special">&lt;</span> <span class="identifier">uint32_t</span> <span class="special">&gt;</span>    <span class="identifier">l2_shared_with</span><span class="special">;</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">set</span><span class="special">&lt;</span> <span class="identifier">uint32_t</span> <span class="special">&gt;</span>    <span class="identifier">l3_shared_with</span><span class="special">;</span>
+<span class="special">};</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">topo_t</span> <span class="special">&gt;</span> <span class="identifier">cpu_topology</span><span class="special">();</span>
+
+<span class="keyword">namespace</span> <span class="identifier">this_worker</span> <span class="special">{</span>
+
+<span class="identifier">topo_t</span> <span class="identifier">topology</span><span class="special">()</span> <span class="keyword">noexcept</span><span class="special">;</span>
+
+<span class="special">}}}</span>
+</pre>
+<p>
+      <span class="bold"><strong>Boost.Job</strong></span> provides function <a class="link" href="topology/topo_t.html#cpu_topology"> <code class="computeroutput">cpu_topology()</code></a> to
+      inspect which logical processors are online. The returned structure contains
+      the ID of logical processor <sup>[<a name="job.topology.f0" href="#ftn.job.topology.f0" class="footnote">3</a>]</sup> are online, the ID of the NUMA node to which the logical processor
+      belongs and with which other logical processors L1/L2/L3 cache is shared <sup>[<a name="job.topology.f1" href="#ftn.job.topology.f1" class="footnote">4</a>]</sup>. This information is used internally to pin worker threads to logical
+      processors and which logical processor is appropriate for a job (memory latency).
+    </p>
+<div class="footnotes">
+<br><hr width="100" align="left">
+<div class="footnote"><p><sup>[<a name="ftn.job.topology.f0" href="#job.topology.f0" class="para">3</a>] </sup>
+        On Windows
+      </p></div>
+<div class="footnote"><p><sup>[<a name="ftn.job.topology.f1" href="#job.topology.f1" class="para">4</a>] </sup>
+        not all platforms supported
+      </p></div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Oliver Kowalke<p>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <a href="http://www.boost.org/LICENSE_1_0.txt" target="_top">http://www.boost.org/LICENSE_1_0.txt</a>)
+      </p>
+</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="job_mgmt/this_worker.html"><img src="../../../../../doc/src/images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../../../../../doc/src/images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../../../../../doc/src/images/home.png" alt="Home"></a><a accesskey="n" href="topology/topo_t.html"><img src="../../../../../doc/src/images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

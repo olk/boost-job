@@ -1,0 +1,1562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE library PUBLIC "-//Boost//DTD BoostBook XML V1.0//EN" "http://www.boost.org/tools/boostbook/dtd/boostbook.dtd">
+<library id="job" name="Job" dirname="job" last-revision="$Date: 2015/08/12 16:45:16 $"
+ xmlns:xi="http://www.w3.org/2001/XInclude">
+  <libraryinfo>
+    <authorgroup>
+    <author>
+      <firstname>Oliver</firstname> <surname>Kowalke</surname>
+    </author>
+    </authorgroup>
+    <copyright>
+      <year>2015</year> <holder>Oliver Kowalke</holder>
+    </copyright>
+    <legalnotice id="job.legal">
+      <para>
+        Distributed under the Boost Software License, Version 1.0. (See accompanying
+        file LICENSE_1_0.txt or copy at <ulink url="http://www.boost.org/LICENSE_1_0.txt">http://www.boost.org/LICENSE_1_0.txt</ulink>)
+      </para>
+    </legalnotice>
+    <librarypurpose>
+      C++ Library schedule jobs on processors
+    </librarypurpose>
+    <librarycategory name="category:text"></librarycategory>
+  </libraryinfo>
+  <title>Job</title>
+  <section id="job.overview">
+    <title><link linkend="job.overview">Overview</link></title>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> provides a framework for asynchronous
+      execution of job-graphs <footnote id="job.overview.f0">
+      <para>
+        A job is a small unit of code that can be executed independently and parallel,
+        e.g. it's a fain-grained work item
+      </para>
+      </footnote> of arbitrary dependency, e.g. solving the many-dependent-jobs problem
+      (M: worker jobs, N: jobs waiting for other jobs; M &lt;&lt; N).
+    </para>
+    <para>
+      Each (logical) processor of a dedicated processor set (configurable) gets a
+      worker-thread assigned. Each worker-thread runs a fiber-pool (launch policy
+      is customizable). A submitted job is always executed by a worker-fiber. By
+      using <emphasis role="bold">Boost.Fiber</emphasis> jobs are scheduled cooperatively
+      so that a job can yield to other jobs during its execution. Jobs can be synchronized
+      via primitives like mutex's, conditions, barriers and channels (message exchange)
+      from <emphasis role="bold">Boost.Fiber</emphasis> without blocking the worker-thread.
+      Fibers provide a fast context switch.
+    </para>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> supports to inspect the NUMA topology
+      (e.g. which logical processors are online, and which processors share L1/L2/L3
+      cache). This information can be used to select a appropriate processor for
+      a job. For a fast access to job related data, <emphasis role="bold">Boost.Job</emphasis>
+      provides functions and classes to allocate memory on NUMA nodes <footnote id="job.overview.f1">
+      <para>
+        processors of a NUMA node share cache and have a faster access to its associated
+        memory bank than processors of other nodes.
+      </para>
+      </footnote>.
+    </para>
+    <para>
+      In order to use the classes and functions described here, you can either include
+      the specific headers specified by the descriptions of each class or function,
+      or include the master library header:
+    </para>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">all</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+</programlisting>
+    <para>
+      which includes all the other headers in turn.
+    </para>
+    <para>
+      The namespaces used are:
+    </para>
+<programlisting><phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">this_worker</phrase>
+</programlisting>
+    <warning>
+      <para>
+        This library is <emphasis>not</emphasis> an official Boost library
+      </para>
+    </warning>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> depends upon <emphasis role="bold">Boost.Fiber</emphasis>.
+      Boost version 1.59.0 or greater is required.
+    </para>
+    <para>
+      [info This library is C++14-only!]
+    </para>
+  </section>
+  <section id="job.job_mgmt">
+    <title><link linkend="job.job_mgmt">Job management</link></title>
+    <bridgehead renderas="sect3" id="job.job_mgmt.h0">
+      <phrase id="job.job_mgmt.synopsis"/><link linkend="job.job_mgmt.synopsis">Synopsis</link>
+    </bridgehead>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">all</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">jobs</phrase> <phrase role="special">{</phrase>
+
+<phrase role="keyword">class</phrase> <phrase role="identifier">scheduler</phrase><phrase role="special">;</phrase>
+
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">this_worker</phrase> <phrase role="special">{</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">submit</phrase><phrase role="special">(</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+<phrase role="special">}}}</phrase>
+</programlisting>
+    <para>
+      A job is a small unit of code that can be executed independently and parallel,
+      e.g. it's a fain-grained work item. Each job is executed by a worker-fiber
+      running in a worker-thread, thus jobs are scheduled cooperatively so that a
+      job can yield to other jobs during its execution. The result of a job is transported
+      via a future.
+    </para>
+    <para>
+      The worker-thread is pinned to the logical processor, e.g. the Operating System
+      Scheduler does not schedule the thread to another processor.
+    </para>
+    <para>
+      Class <link linkend="class_scheduler"> <code>scheduler</code></link> manages the worker-fibers (creating and pinning
+      on logical processor) and gives access to the different worker-threads via
+      <link linkend="scheduler_submit_preempt"> <code>scheduler::submit_preempt()</code></link> and <link linkend="scheduler_submit_coop"> <code>scheduler::submit_coop()</code></link>.
+      The worker-threads and their worker-fibers are interrupted and joined by calling
+      <link linkend="scheduler_shutdown"> <code>scheduler::shutdown()</code></link>.
+    </para>
+<programlisting><phrase role="comment">// create scheduler, each worker-thread runs 3 worker-fibers</phrase>
+<phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">scheduler</phrase> <phrase role="identifier">s</phrase><phrase role="special">(</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">cpu_topology</phrase><phrase role="special">(),</phrase>
+                          <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">static_pool</phrase><phrase role="special">&lt;</phrase> <phrase role="number">3</phrase> <phrase role="special">&gt;()</phrase> <phrase role="special">);</phrase>
+<phrase role="keyword">int</phrase> <phrase role="identifier">n</phrase> <phrase role="special">=</phrase> <phrase role="number">10</phrase><phrase role="special">;</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">int</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">f</phrase> <phrase role="special">=</phrase> <phrase role="identifier">s</phrase><phrase role="special">.</phrase><phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase>
+          <phrase role="number">0</phrase><phrase role="special">,</phrase> <phrase role="comment">// execute job on logical processor `0`</phrase>
+          <phrase role="comment">// pass job-function</phrase>
+          <phrase role="special">[</phrase><phrase role="identifier">n</phrase><phrase role="special">](){</phrase>
+              <phrase role="keyword">int</phrase> <phrase role="identifier">first</phrase> <phrase role="special">=</phrase> <phrase role="number">1</phrase><phrase role="special">,</phrase> <phrase role="identifier">second</phrase> <phrase role="special">=</phrase> <phrase role="number">1</phrase><phrase role="special">,</phrase> <phrase role="identifier">third</phrase> <phrase role="special">=</phrase> <phrase role="special">-</phrase><phrase role="number">1</phrase><phrase role="special">;</phrase>
+              <phrase role="keyword">for</phrase> <phrase role="special">(</phrase> <phrase role="keyword">int</phrase> <phrase role="identifier">i</phrase> <phrase role="special">=</phrase> <phrase role="number">2</phrase><phrase role="special">;</phrase> <phrase role="identifier">i</phrase> <phrase role="special">&lt;</phrase> <phrase role="identifier">n</phrase><phrase role="special">;</phrase> <phrase role="special">++</phrase><phrase role="identifier">i</phrase><phrase role="special">)</phrase> <phrase role="special">{</phrase>
+                  <phrase role="identifier">third</phrase> <phrase role="special">=</phrase> <phrase role="identifier">first</phrase> <phrase role="special">+</phrase> <phrase role="identifier">second</phrase><phrase role="special">;</phrase>
+                  <phrase role="identifier">first</phrase> <phrase role="special">=</phrase> <phrase role="identifier">second</phrase><phrase role="special">;</phrase>
+                  <phrase role="identifier">second</phrase> <phrase role="special">=</phrase> <phrase role="identifier">third</phrase><phrase role="special">;</phrase>
+              <phrase role="special">}</phrase>
+              <phrase role="keyword">return</phrase> <phrase role="identifier">third</phrase><phrase role="special">;</phrase>
+          <phrase role="special">});</phrase>
+
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">cout</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;fibonacci(&quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">n</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;) = &quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">f</phrase><phrase role="special">.</phrase><phrase role="identifier">get</phrase><phrase role="special">()</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">endl</phrase><phrase role="special">;</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">cout</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;main: done&quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">endl</phrase><phrase role="special">;</phrase>
+</programlisting>
+    <para>
+      Exception thrown inside the job function are catched and transported via the
+      returned future.
+    </para>
+    <para>
+      Jobs can be synchronized (without blocking the worker-thread) by using synchronization
+      objects (like mutex, condition_variables ...) from <emphasis role="bold">Boost.Fiber</emphasis>.
+      For instance a job can wait for the result of a sub-job using <code><phrase
+      role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">fibers</phrase><phrase
+      role="special">::</phrase><phrase role="identifier">future</phrase><phrase
+      role="special">&lt;&gt;</phrase></code> (spawning sub-job by calling <link linkend="scheduler_submit_coop"> <code>scheduler::submit_coop()</code></link>)
+      without blocking the worker-thread on which it is executed. It doesn't matter
+      to which logical processor the sub-job was submitted.
+    </para>
+<programlisting><phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">scheduler</phrase> <phrase role="identifier">s</phrase><phrase role="special">(</phrase> <phrase role="identifier">topo</phrase><phrase role="special">,</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">static_pool</phrase><phrase role="special">&lt;</phrase> <phrase role="number">2</phrase> <phrase role="special">&gt;()</phrase> <phrase role="special">);</phrase>
+<phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">mutex</phrase> <phrase role="identifier">mtx</phrase><phrase role="special">;</phrase>
+<phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">condition_variable</phrase> <phrase role="identifier">cond</phrase><phrase role="special">;</phrase>
+<phrase role="keyword">int</phrase> <phrase role="identifier">i</phrase> <phrase role="special">=</phrase> <phrase role="number">0</phrase><phrase role="special">;</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">void</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">f1</phrase> <phrase role="special">=</phrase> <phrase role="identifier">s</phrase><phrase role="special">.</phrase><phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="identifier">topo</phrase><phrase role="special">[</phrase><phrase role="number">0</phrase><phrase role="special">].</phrase><phrase role="identifier">processor_id</phrase><phrase role="special">,</phrase>
+          <phrase role="special">[&amp;</phrase><phrase role="identifier">mtx</phrase><phrase role="special">,&amp;</phrase><phrase role="identifier">cond</phrase><phrase role="special">,</phrase> <phrase role="special">&amp;</phrase><phrase role="identifier">i</phrase><phrase role="special">](){</phrase>
+              <phrase role="comment">// aquire lock on mutex, might be happen before the other jobs tries to acquire lock</phrase>
+              <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">unique_lock</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">mutex</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">lk</phrase><phrase role="special">(</phrase> <phrase role="identifier">mtx</phrase><phrase role="special">);</phrase>
+              <phrase role="comment">// wait for synchronizing shared variable `i`</phrase>
+              <phrase role="comment">// will suspended current job</phrase>
+              <phrase role="comment">// other jobs running on this worker-thread are able be resumed/executed</phrase>
+              <phrase role="identifier">cond</phrase><phrase role="special">.</phrase><phrase role="identifier">wait</phrase><phrase role="special">(</phrase> <phrase role="identifier">lk</phrase><phrase role="special">,</phrase> <phrase role="special">[&amp;</phrase><phrase role="identifier">i</phrase><phrase role="special">](){</phrase> <phrase role="keyword">return</phrase> <phrase role="number">0</phrase> <phrase role="special">!=</phrase> <phrase role="identifier">i</phrase><phrase role="special">;</phrase> <phrase role="special">});</phrase>
+              <phrase role="comment">// resumed because notified by other job</phrase>
+              <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">cout</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;fiber &quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">this_fiber</phrase><phrase role="special">::</phrase><phrase role="identifier">get_id</phrase><phrase role="special">()</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;: received: &quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">i</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">endl</phrase><phrase role="special">;</phrase>
+          <phrase role="special">});</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">void</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">f2</phrase> <phrase role="special">=</phrase> <phrase role="identifier">s</phrase><phrase role="special">.</phrase><phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="identifier">topo</phrase><phrase role="special">[</phrase><phrase role="number">1</phrase><phrase role="special">].</phrase><phrase role="identifier">processor_id</phrase><phrase role="special">,</phrase>
+          <phrase role="special">[&amp;</phrase><phrase role="identifier">mtx</phrase><phrase role="special">,&amp;</phrase><phrase role="identifier">cond</phrase><phrase role="special">,</phrase> <phrase role="special">&amp;</phrase><phrase role="identifier">i</phrase><phrase role="special">](){</phrase>
+              <phrase role="comment">// sleep for one seconds</phrase>
+              <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">this_fiber</phrase><phrase role="special">::</phrase><phrase role="identifier">sleep_for</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">chrono</phrase><phrase role="special">::</phrase><phrase role="identifier">seconds</phrase><phrase role="special">(</phrase> <phrase role="number">1</phrase><phrase role="special">)</phrase> <phrase role="special">);</phrase>
+              <phrase role="comment">// aquire lock on mutex</phrase>
+              <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">unique_lock</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">mutex</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">lk</phrase><phrase role="special">(</phrase> <phrase role="identifier">mtx</phrase><phrase role="special">);</phrase>
+              <phrase role="comment">// modify shard variable</phrase>
+              <phrase role="identifier">i</phrase> <phrase role="special">=</phrase> <phrase role="number">7</phrase><phrase role="special">;</phrase>
+              <phrase role="comment">// notify other job</phrase>
+              <phrase role="identifier">cond</phrase><phrase role="special">.</phrase><phrase role="identifier">notify_all</phrase><phrase role="special">();</phrase>
+              <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">cout</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;fiber &quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">this_fiber</phrase><phrase role="special">::</phrase><phrase role="identifier">get_id</phrase><phrase role="special">()</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;: sent: &quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">i</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">endl</phrase><phrase role="special">;</phrase>
+              <phrase role="comment">// release lock</phrase>
+              <phrase role="identifier">lk</phrase><phrase role="special">.</phrase><phrase role="identifier">unlock</phrase><phrase role="special">();</phrase>
+          <phrase role="special">});</phrase>
+<phrase role="identifier">f1</phrase><phrase role="special">.</phrase><phrase role="identifier">wait</phrase><phrase role="special">();</phrase>
+<phrase role="identifier">f2</phrase><phrase role="special">.</phrase><phrase role="identifier">wait</phrase><phrase role="special">();</phrase>
+</programlisting>
+    <para>
+      In the example above a mutex and a condition-variable are used to synchronize
+      two jobs running on different logical processors. The worker-threads are not
+      blocked, e.g. if one of the two jobs is waiting for a notification (inside
+      <code><phrase role="identifier">condition_variable</phrase><phrase role="special">::</phrase><phrase
+      role="identifier">wait</phrase><phrase role="special">()</phrase></code>) other
+      jobs (== worker-fibers) on that logical processor are able to be resumed/executed.
+    </para>
+    <section id="job.job_mgmt.scheduler">
+      <title><anchor id="class_scheduler"/><link linkend="job.job_mgmt.scheduler">Class
+      <code><phrase role="identifier">scheduler</phrase></code></link></title>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">scheduler</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">class</phrase> <phrase role="identifier">scheduler</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">public</phrase><phrase role="special">:</phrase>
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">FiberPool</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">scheduler</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">topology</phrase><phrase role="special">,</phrase> <phrase role="identifier">FiberPool</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">pool</phrase><phrase role="special">,</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="identifier">salloc</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">FiberPool</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">scheduler</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">topology</phrase><phrase role="special">,</phrase> <phrase role="identifier">FiberPool</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">pool</phrase><phrase role="special">);</phrase>
+
+    <phrase role="identifier">scheduler</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">topology</phrase><phrase role="special">);</phrase>
+
+    <phrase role="special">~</phrase><phrase role="identifier">scheduler</phrase><phrase role="special">()</phrase> <phrase role="keyword">noexcept</phrase><phrase role="special">;</phrase>
+
+    <phrase role="identifier">scheduler</phrase><phrase role="special">(</phrase> <phrase role="identifier">scheduler</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;)</phrase> <phrase role="special">=</phrase> <phrase role="keyword">delete</phrase><phrase role="special">;</phrase>
+
+    <phrase role="identifier">scheduler</phrase> <phrase role="special">&amp;</phrase> <phrase role="keyword">operator</phrase><phrase role="special">=(</phrase> <phrase role="identifier">scheduler</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;)</phrase> <phrase role="special">=</phrase> <phrase role="keyword">delete</phrase><phrase role="special">;</phrase>
+
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Allocator</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">allocator_arg_t</phrase><phrase role="special">,</phrase> <phrase role="identifier">Allocator</phrase> <phrase role="identifier">alloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Allocator</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">&amp;&amp;(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">submit_coop</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">allocator_arg_t</phrase><phrase role="special">,</phrase> <phrase role="identifier">Allocator</phrase> <phrase role="identifier">alloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">submit_coop</phrase><phrase role="special">(</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">void</phrase> <phrase role="identifier">shutdown</phrase><phrase role="special">();</phrase>
+<phrase role="special">};</phrase>
+</programlisting>
+      <bridgehead renderas="sect4" id="job.job_mgmt.scheduler.h0">
+        <phrase id="job.job_mgmt.scheduler.constructor"/><link linkend="job.job_mgmt.scheduler.constructor">Constructor</link>
+      </bridgehead>
+<programlisting><phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">FiberPool</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">scheduler</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">topology</phrase><phrase role="special">,</phrase> <phrase role="identifier">FiberPool</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">pool</phrase><phrase role="special">,</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="identifier">salloc</phrase><phrase role="special">);</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">FiberPool</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">scheduler</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">topology</phrase><phrase role="special">,</phrase> <phrase role="identifier">FiberPool</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">pool</phrase><phrase role="special">);</phrase>
+
+<phrase role="identifier">scheduler</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">topology</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Depending on parameter <code><phrase role="identifier">topology</phrase></code>,
+              <code><phrase role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
+              role="identifier">threads</phrase></code> are created and pinned to
+              the logical processors. Depending on the FiberPool strategy, <code><phrase
+              role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
+              role="identifier">fibers</phrase></code> are launched.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Note:</term>
+          <listitem>
+            <para>
+              StackAllocator is required to allocate a stack for the internal <code><phrase
+              role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
+              role="identifier">fibers</phrase></code>. If StackAllocator is not
+              explicitly passed, a <link linkend="class_numa_fixedsize_stack"> <code>numa_fixedsize_stack</code></link> is
+              used by default. <link linkend="class_static_pool"> <code>static_pool&lt;&gt;</code></link> for 64 <code><phrase
+              role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
+              role="identifier">fibers</phrase></code> is used if no FiberPool is
+              specified
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <bridgehead renderas="sect4" id="job.job_mgmt.scheduler.h1">
+        <phrase id="job.job_mgmt.scheduler.destructor"/><link linkend="job.job_mgmt.scheduler.destructor">Destructor</link>
+      </bridgehead>
+<programlisting><phrase role="special">~</phrase><phrase role="identifier">scheduler</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins the worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Throws:</term>
+          <listitem>
+            <para>
+              Nothing.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="scheduler_submit_preempt_bridgehead">
+  <phrase id="scheduler_submit_preempt"/>
+  <link linkend="scheduler_submit_preempt">Templated
+        member function <code>submit_preempt</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Allocator</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">allocator_arg_t</phrase><phrase role="special">,</phrase> <phrase role="identifier">Allocator</phrase> <phrase role="identifier">alloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              a <code><phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase
+              role="identifier">future</phrase></code> associated with the job.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Note:</term>
+          <listitem>
+            <para>
+              The job is executed by the worker-thread running on logical processor
+              <code><phrase role="identifier">cpuid</phrase></code>. If no Allocator
+              is passed, <link linkend="class_numa_allocator"> <code>numa_allocator&lt;&gt;</code></link> is used.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="scheduler_submit_coop_bridgehead">
+  <phrase id="scheduler_submit_coop"/>
+  <link linkend="scheduler_submit_coop">Templated
+        member function <code>submit_coop</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Allocator</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">&amp;&amp;(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">submit_coop</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">allocator_arg_t</phrase><phrase role="special">,</phrase> <phrase role="identifier">Allocator</phrase> <phrase role="identifier">alloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">cpuid</phrase><phrase role="special">,</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              a <code><phrase role="identifier">boost</phrase><phrase role="special">:.</phrase><phrase
+              role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase
+              role="identifier">future</phrase></code> associated with the job.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Note:</term>
+          <listitem>
+            <para>
+              The job is executed by the worker-thread running on logical processor
+              <code><phrase role="identifier">cpuid</phrase></code>. If no Allocator
+              is passed, <link linkend="class_numa_allocator"> <code>numa_allocator&lt;&gt;</code></link> is used.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="scheduler_shutdown_bridgehead">
+  <phrase id="scheduler_shutdown"/>
+  <link linkend="scheduler_shutdown">Member function
+        <code>shutdown</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">void</phrase> <phrase role="identifier">shutdown</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+    <section id="job.job_mgmt.this_worker">
+      <title><link linkend="job.job_mgmt.this_worker">Namespace this_worker</link></title>
+<programlisting><phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">jobs</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">this_worker</phrase> <phrase role="special">{</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">submit</phrase><phrase role="special">(</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+
+<phrase role="special">}}}</phrase>
+</programlisting>
+      <para>
+        <bridgehead renderas="sect4" id="this_worker_submit()_bridgehead">
+  <phrase id="this_worker_submit()"/>
+  <link linkend="this_worker_submit()">Non-member
+        function <code>this_worker::submit()()</code></link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">operations</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="special">...</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">result_of</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">Fn</phrase><phrase role="special">(</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">...</phrase> <phrase role="special">)</phrase> <phrase role="special">&gt;::</phrase><phrase role="identifier">type</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">submit</phrase><phrase role="special">(</phrase> <phrase role="identifier">Fn</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="identifier">fn</phrase><phrase role="special">,</phrase> <phrase role="identifier">Args</phrase> <phrase role="special">&amp;&amp;</phrase> <phrase role="special">...</phrase> <phrase role="identifier">args</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              The job associated with <code><phrase role="identifier">fn</phrase></code>
+              is executed within this worker-thread.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              Future associated with the result of the submitted job.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+  </section>
+  <section id="job.topology">
+    <title><link linkend="job.topology">Topology</link></title>
+    <bridgehead renderas="sect3" id="job.topology.h0">
+      <phrase id="job.topology.synopsis"/><link linkend="job.topology.synopsis">Synopsis</link>
+    </bridgehead>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">all</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">jobs</phrase> <phrase role="special">{</phrase>
+
+<phrase role="keyword">struct</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">{</phrase>
+    <phrase role="identifier">uint32_t</phrase>                <phrase role="identifier">node_id</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">uint32_t</phrase>                <phrase role="identifier">processor_id</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">set</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="special">&gt;</phrase>    <phrase role="identifier">l1_shared_with</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">set</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="special">&gt;</phrase>    <phrase role="identifier">l2_shared_with</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">set</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="special">&gt;</phrase>    <phrase role="identifier">l3_shared_with</phrase><phrase role="special">;</phrase>
+<phrase role="special">};</phrase>
+
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">cpu_topology</phrase><phrase role="special">();</phrase>
+
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">this_worker</phrase> <phrase role="special">{</phrase>
+
+<phrase role="identifier">topo_t</phrase> <phrase role="identifier">topology</phrase><phrase role="special">()</phrase> <phrase role="keyword">noexcept</phrase><phrase role="special">;</phrase>
+
+<phrase role="special">}}}</phrase>
+</programlisting>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> provides function <link linkend="cpu_topology"> <code>cpu_topology()</code></link> to
+      inspect which logical processors are online. The returned structure contains
+      the ID of logical processor <footnote id="job.topology.f0">
+      <para>
+        On Windows
+      </para>
+      </footnote> are online, the ID of the NUMA node to which the logical processor
+      belongs and with which other logical processors L1/L2/L3 cache is shared <footnote
+      id="job.topology.f1">
+      <para>
+        not all platforms supported
+      </para>
+      </footnote>. This information is used internally to pin worker threads to logical
+      processors and which logical processor is appropriate for a job (memory latency).
+    </para>
+    <section id="job.topology.topo_t">
+      <title><anchor id="class_topo_t"/><link linkend="job.topology.topo_t">Class
+      <code><phrase role="identifier">topo_t</phrase></code></link></title>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">topology</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">jobs</phrase> <phrase role="special">{</phrase>
+
+<phrase role="keyword">struct</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">{</phrase>
+    <phrase role="identifier">uint32_t</phrase>                <phrase role="identifier">node_id</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">uint32_t</phrase>                <phrase role="identifier">processor_id</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">set</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="special">&gt;</phrase>    <phrase role="identifier">l1_shared_with</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">set</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="special">&gt;</phrase>    <phrase role="identifier">l2_shared_with</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">set</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="special">&gt;</phrase>    <phrase role="identifier">l3_shared_with</phrase><phrase role="special">;</phrase>
+<phrase role="special">};</phrase>
+
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">cpu_topology</phrase><phrase role="special">();</phrase>
+
+<phrase role="special">}}</phrase>
+</programlisting>
+      <para>
+        <bridgehead renderas="sect4" id="cpu_topology_bridgehead">
+  <phrase id="cpu_topology"/>
+  <link linkend="cpu_topology">Non-member function <code>cpu_topology()</code></link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">vector</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">topo_t</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">cpu_topology</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              vector of topo_t structures of logical processors, which are online.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+    <section id="job.topology.this_worker">
+      <title><link linkend="job.topology.this_worker">Namespace this_worker</link></title>
+<programlisting><phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">jobs</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">this_worker</phrase> <phrase role="special">{</phrase>
+
+<phrase role="identifier">topo_t</phrase> <phrase role="identifier">topology</phrase><phrase role="special">()</phrase> <phrase role="keyword">noexcept</phrase><phrase role="special">;</phrase>
+
+<phrase role="special">}}}</phrase>
+</programlisting>
+      <para>
+        <bridgehead renderas="sect4" id="this_worker_topology()_bridgehead">
+  <phrase id="this_worker_topology()"/>
+  <link linkend="this_worker_topology()">Non-member
+        function <code>this_worker::topology()()</code></link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">operations</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="identifier">topo_t</phrase> <phrase role="identifier">topology</phrase><phrase role="special">()</phrase> <phrase role="keyword">noexcept</phrase><phrase role="special">;</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              the topo_t struct associated with the current worker-thread.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Throws:</term>
+          <listitem>
+            <para>
+              Nothing.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+  </section>
+  <section id="job.stack">
+    <title><anchor id="stack"/><link linkend="job.stack">Stack allocation</link></title>
+    <para>
+      A worker-fiber uses internally a <ulink url="boost:/libs/context/doc/html/context/econtext.html"><code><phrase
+      role="identifier">execution_context</phrase></code></ulink> which manages a
+      set of registers and a stack. The memory used by the stack is allocated/deallocated
+      via a <emphasis>stack_allocator</emphasis> which is required to model a <link
+      linkend="stack_allocator_concept"><emphasis>stack-allocator concept</emphasis></link>.
+    </para>
+    <anchor id="stack_allocator_concept"/>
+    <bridgehead renderas="sect3" id="job.stack.h0">
+      <phrase id="job.stack._link_linkend__stack_allocator_concept___emphasis_stack_allocator_concept__emphasis___link_"/><link
+      linkend="job.stack._link_linkend__stack_allocator_concept___emphasis_stack_allocator_concept__emphasis___link_"><link
+      linkend="stack_allocator_concept"><emphasis>stack-allocator concept</emphasis></link></link>
+    </bridgehead>
+    <para>
+      A <emphasis>stack_allocator</emphasis> must satisfy the <link linkend="stack_allocator_concept"><emphasis>stack-allocator
+      concept</emphasis></link> requirements shown in the following table, in which
+      <code><phrase role="identifier">a</phrase></code> is an object of a <emphasis>stack_allocator</emphasis>
+      type, <code><phrase role="identifier">sctx</phrase></code> is a <ulink url="boost:/libs/context/doc/html/context/stack/stack_context.html"><code><phrase
+      role="identifier">stack_context</phrase></code></ulink>, and <code><phrase
+      role="identifier">size</phrase></code> is a <code><phrase role="identifier">std</phrase><phrase
+      role="special">::</phrase><phrase role="identifier">size_t</phrase></code>:
+    </para>
+    <informaltable frame="all">
+      <tgroup cols="3">
+        <thead>
+          <row>
+            <entry>
+              <para>
+                expression
+              </para>
+            </entry>
+            <entry>
+              <para>
+                return type
+              </para>
+            </entry>
+            <entry>
+              <para>
+                notes
+              </para>
+            </entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>
+              <para>
+                <code><phrase role="identifier">a</phrase><phrase role="special">(</phrase><phrase
+                role="identifier">size</phrase><phrase role="special">)</phrase></code>
+              </para>
+            </entry>
+            <entry>
+            </entry>
+            <entry>
+              <para>
+                creates a stack allocator
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                <code><phrase role="identifier">a</phrase><phrase role="special">.</phrase><phrase
+                role="identifier">allocate</phrase><phrase role="special">()</phrase></code>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                <ulink url="boost:/libs/context/doc/html/context/stack/stack_context.html"><code><phrase
+                role="identifier">stack_context</phrase></code></ulink>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                creates a stack
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                <code><phrase role="identifier">a</phrase><phrase role="special">.</phrase><phrase
+                role="identifier">deallocate</phrase><phrase role="special">(</phrase>
+                <phrase role="identifier">sctx</phrase><phrase role="special">)</phrase></code>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                <code><phrase role="keyword">void</phrase></code>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                deallocates the stack created by <code><phrase role="identifier">a</phrase><phrase
+                role="special">.</phrase><phrase role="identifier">allocate</phrase><phrase
+                role="special">()</phrase></code>
+              </para>
+            </entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+    <important>
+      <para>
+        The implementation of <code><phrase role="identifier">allocate</phrase><phrase
+        role="special">()</phrase></code> might include logic to protect against
+        exceeding the context's available stack size rather than leaving it as undefined
+        behaviour.
+      </para>
+    </important>
+    <important>
+      <para>
+        Calling <code><phrase role="identifier">deallocate</phrase><phrase role="special">()</phrase></code>
+        with a <ulink url="boost:/libs/context/doc/html/context/stack/stack_context.html"><code><phrase
+        role="identifier">stack_context</phrase></code></ulink> not obtained from
+        <code><phrase role="identifier">allocate</phrase><phrase role="special">()</phrase></code>
+        results in undefined behaviour.
+      </para>
+    </important>
+    <note>
+      <para>
+        The memory for the stack is not required to be aligned; alignment takes place
+        inside <ulink url="boost:/libs/context/doc/html/context/econtext.html"><code><phrase
+        role="identifier">execution_context</phrase></code></ulink>.
+      </para>
+    </note>
+    <para>
+      See also <ulink url="boost:/libs/context/doc/html/context/stack.html">Boost.Context
+      stack allocation</ulink>.
+    </para>
+    <para>
+      <bridgehead renderas="sect4" id="class_protected_fixedsize_stack_bridgehead">
+  <phrase id="class_protected_fixedsize_stack"/>
+  <link linkend="class_protected_fixedsize_stack">Class
+      <code>protected_fixedsize_stack</code></link>
+</bridgehead>
+    </para>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> provides the class <link linkend="class_protected_fixedsize_stack"> <code>protected_fixedsize_stack</code></link> which
+      models the <link linkend="stack_allocator_concept"><emphasis>stack-allocator
+      concept</emphasis></link>. It appends a guard page at the end of each stack
+      to protect against exceeding the stack. If the guard page is accessed (read
+      or write operation) a segmentation fault/access violation is generated by the
+      operating system.
+    </para>
+    <important>
+      <para>
+        Using <link linkend="class_protected_fixedsize_stack"> <code>protected_fixedsize_stack</code></link> is expensive.
+        Launching a new fiber with a stack of this type incurs the overhead of setting
+        the memory protection; once allocated, this stack is just as efficient to
+        use as <link linkend="class_fixedsize_stack"> <code>fixedsize_stack</code></link>.
+      </para>
+    </important>
+    <note>
+      <para>
+        The appended <code><phrase role="identifier">guard</phrase> <phrase role="identifier">page</phrase></code>
+        is <emphasis role="bold">not</emphasis> mapped to physical memory, only virtual
+        addresses are used.
+      </para>
+    </note>
+    <para>
+      <bridgehead renderas="sect4" id="class_fixedsize_stack_bridgehead">
+  <phrase id="class_fixedsize_stack"/>
+  <link linkend="class_fixedsize_stack">Class
+      <code>fixedsize_stack</code></link>
+</bridgehead>
+    </para>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> provides the class <link linkend="class_fixedsize_stack"> <code>fixedsize_stack</code></link> which
+      models the <link linkend="stack_allocator_concept"><emphasis>stack-allocator
+      concept</emphasis></link>. In contrast to <link linkend="class_protected_fixedsize_stack"> <code>protected_fixedsize_stack</code></link> it
+      does not append a guard page at the end of each stack. The memory is simply
+      managed by <code><phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase
+      role="identifier">malloc</phrase><phrase role="special">()</phrase></code>
+      and <code><phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase
+      role="identifier">free</phrase><phrase role="special">()</phrase></code>.
+    </para>
+    <para>
+      <bridgehead renderas="sect4" id="class_numa_fixedsize_stack_bridgehead">
+  <phrase id="class_numa_fixedsize_stack"/>
+  <link linkend="class_numa_fixedsize_stack">Class
+      <code>numa_fixedsize_stack</code></link>
+</bridgehead>
+    </para>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> provides the class __numa_fixedsize_stack__
+      which models the <link linkend="stack_allocator_concept"><emphasis>stack-allocator
+      concept</emphasis></link>. In contrast to <link linkend="class_fixedsize_stack"> <code>fixedsize_stack</code></link> and
+      <link linkend="class_protected_fixedsize_stack"> <code>protected_fixedsize_stack</code></link> it allocates physical
+      memory on a given specific NUMA node.
+    </para>
+    <para>
+      <bridgehead renderas="sect4" id="class_segmented_stack_bridgehead">
+  <phrase id="class_segmented_stack"/>
+  <link linkend="class_segmented_stack">Class
+      <code>segmented_stack</code></link>
+</bridgehead>
+    </para>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> supports usage of a <link linkend="class_segmented_stack"> <code>segmented_stack</code></link>,
+      i.e. the stack grows on demand. The fiber is created with a minimal stack size
+      which will be increased as required. Class <link linkend="class_segmented_stack"> <code>segmented_stack</code></link> models
+      the <link linkend="stack_allocator_concept"><emphasis>stack-allocator concept</emphasis></link>.
+      In contrast to <link linkend="class_protected_fixedsize_stack"> <code>protected_fixedsize_stack</code></link> and
+      <link linkend="class_fixedsize_stack"> <code>fixedsize_stack</code></link> it creates a stack which grows on demand.
+    </para>
+    <note>
+      <para>
+        Segmented stacks are currently only supported by <emphasis role="bold">gcc</emphasis>
+        from version <emphasis role="bold">4.7</emphasis> and <emphasis role="bold">clang</emphasis>
+        from version <emphasis role="bold">3.4</emphasis> onwards. In order to use
+        a <link linkend="class_segmented_stack"> <code>segmented_stack</code></link>, <emphasis role="bold">Boost.Job</emphasis>
+        (and <emphasis role="bold">Boost.Fiber</emphasis> as well as <ulink url="boost:/libs/context/index.html">Boost.Context</ulink>)
+        must be built with property <code><phrase role="identifier">segmented</phrase><phrase
+        role="special">-</phrase><phrase role="identifier">stacks</phrase></code>,
+        e.g. <emphasis role="bold">toolset=gcc segmented-stacks=on</emphasis> at
+        b2/bjam command line.
+      </para>
+    </note>
+  </section>
+  <section id="job.pools">
+    <title><link linkend="job.pools">Pools</link></title>
+    <para>
+      Each worker-thread runs a set of worker-fibers. The fiber-pool implements a
+      strategy how worker-fibers are created and destroyed. A worker-fiber dequeues
+      a job from the job queue of the worker-thread, So each job is associated with
+      on worker-fiber. After finishing the job the fiber dequeues the next job, This
+      operation might block the worker-fiber but not the worker-thread, which is
+      capable to execute job by running another worker-fiber. The pool is stored
+      on thread's stack, so its life time is the life time of the worker-thread.
+      The creation of worker-fibers, the processing of job and the destruction of
+      worker-fibers are done inside <code><phrase role="keyword">operator</phrase><phrase
+      role="special">()</phrase></code> of the fiber pool.
+    </para>
+    <bridgehead renderas="sect3" id="job.pools.h0">
+      <phrase id="job.pools.synopsis"/><link linkend="job.pools.synopsis">Synopsis</link>
+    </bridgehead>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">all</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">jobs</phrase> <phrase role="special">{</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">N</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">struct</phrase> <phrase role="identifier">static_pool</phrase><phrase role="special">;</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">Min</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">Max</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">N</phrase> <phrase role="special">=</phrase> <phrase role="number">1</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">class</phrase> <phrase role="identifier">dynamic_pool</phrase><phrase role="special">;</phrase>
+
+<phrase role="special">}}</phrase>
+</programlisting>
+    <section id="job.pools.static_pool">
+      <title><anchor id="class_static_pool"/><link linkend="job.pools.static_pool">Class
+      <code><phrase role="identifier">static_pool</phrase></code></link></title>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">static_pool</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">N</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">struct</phrase> <phrase role="identifier">static_pool</phrase> <phrase role="special">{</phrase>
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="keyword">void</phrase> <phrase role="keyword">operator</phrase><phrase role="special">()(</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="identifier">salloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">atomic_bool</phrase> <phrase role="special">*</phrase> <phrase role="identifier">shtdwn</phrase><phrase role="special">,</phrase>
+                     <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">queue</phrase> <phrase role="special">*</phrase> <phrase role="identifier">q</phrase><phrase role="special">,</phrase> <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">rendezvous</phrase> <phrase role="special">*</phrase> <phrase role="identifier">rdzv</phrase><phrase role="special">);</phrase>
+<phrase role="special">};</phrase>
+</programlisting>
+      <para>
+        <bridgehead renderas="sect4" id="static_pool_operator()_bridgehead">
+  <phrase id="static_pool_operator()"/>
+  <link linkend="static_pool_operator()">Templated
+        member function <code>operator()</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">void</phrase> <phrase role="keyword">operator</phrase><phrase role="special">()(</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="identifier">salloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">atomic_bool</phrase> <phrase role="special">*</phrase> <phrase role="identifier">shtdwn</phrase><phrase role="special">,</phrase>
+                 <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">queue</phrase> <phrase role="special">*</phrase> <phrase role="identifier">q</phrase><phrase role="special">,</phrase> <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">rendezvous</phrase> <phrase role="special">*</phrase> <phrase role="identifier">rdzv</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Creates <code><phrase role="identifier">N</phrase></code> worker-fibers
+              and connects them with the job queue of the worker-thread. A worker.fiber
+              gets removed (destroyed) if the job-queue is empty, worker-fibers are
+              ready to run and more than <code><phrase role="identifier">Min</phrase></code>
+              worker-fibers are running. Before this function returns all worker-fibers
+              are interrupted and joined.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+    <section id="job.pools.dynamic_pool">
+      <title><anchor id="class_dynamic_pool"/><link linkend="job.pools.dynamic_pool">Class
+      <code><phrase role="identifier">dynamic_pool</phrase></code></link></title>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">dynamic_pool</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">Min</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">Max</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">N</phrase> <phrase role="special">=</phrase> <phrase role="number">1</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">class</phrase> <phrase role="identifier">dynamic_pool</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">public</phrase><phrase role="special">:</phrase>
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="keyword">void</phrase> <phrase role="keyword">operator</phrase><phrase role="special">()(</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="identifier">salloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">atomic_bool</phrase> <phrase role="special">*</phrase> <phrase role="identifier">shtdwn</phrase><phrase role="special">,</phrase>
+                     <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">queue</phrase> <phrase role="special">*</phrase> <phrase role="identifier">q</phrase><phrase role="special">,</phrase> <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">rendezvous</phrase> <phrase role="special">*</phrase> <phrase role="identifier">rdzv</phrase><phrase role="special">);</phrase>
+<phrase role="special">};</phrase>
+</programlisting>
+      <para>
+        <bridgehead renderas="sect4" id="dynamic_pool_operator()_bridgehead">
+  <phrase id="dynamic_pool_operator()"/>
+  <link linkend="dynamic_pool_operator()">Templated
+        member function <code>operator()</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">void</phrase> <phrase role="keyword">operator</phrase><phrase role="special">()(</phrase> <phrase role="identifier">StackAllocator</phrase> <phrase role="identifier">salloc</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">atomic_bool</phrase> <phrase role="special">*</phrase> <phrase role="identifier">shtdwn</phrase><phrase role="special">,</phrase>
+                 <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">queue</phrase> <phrase role="special">*</phrase> <phrase role="identifier">q</phrase><phrase role="special">,</phrase> <phrase role="identifier">detail</phrase><phrase role="special">::</phrase><phrase role="identifier">rendezvous</phrase> <phrase role="special">*</phrase> <phrase role="identifier">rdzv</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Creates <code><phrase role="identifier">Min</phrase></code> worker-fibers
+              and connects them with the job queue of the worker-thread. If job queue
+              is not empty or no worker-fibers are ready to run than <code><phrase
+              role="identifier">N</phrase></code>, a new worker-fiber will be spawned
+              until <code><phrase role="identifier">Max</phrase></code> worker-fibers
+              are running. A worker.fiber gets removed (destroyed) if the job-queue
+              is empty, worker-fibers are ready to run and more than <code><phrase
+              role="identifier">Min</phrase></code> worker-fibers are running. Before
+              this function returns all worker-fibers are interrupted and joined.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+  </section>
+  <section id="job.numa">
+    <title><link linkend="job.numa">NUMA</link></title>
+    <bridgehead renderas="sect3" id="job.numa.h0">
+      <phrase id="job.numa.synopsis"/><link linkend="job.numa.synopsis">Synopsis</link>
+    </bridgehead>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">all</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">boost</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">namespace</phrase> <phrase role="identifier">jobs</phrase> <phrase role="special">{</phrase>
+
+<phrase role="keyword">void</phrase> <phrase role="special">*</phrase> <phrase role="identifier">numa_alloc</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase><phrase role="special">,</phrase> <phrase role="identifier">uint32_t</phrase><phrase role="special">);</phrase>
+
+<phrase role="keyword">void</phrase> <phrase role="identifier">numa_free</phrase><phrase role="special">(</phrase> <phrase role="keyword">void</phrase> <phrase role="special">*,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase><phrase role="special">);</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">class</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">;</phrase>
+
+<phrase role="special">}}</phrase>
+</programlisting>
+    <para>
+      <emphasis role="bold">Boost.Job</emphasis> offers functionality to allocate
+      physical memory on the memory banks of a NUMA note <footnote id="job.numa.f0">
+      <para>
+        NUMA == non-uniform memory access
+      </para>
+      </footnote>, to which a logical processor belongs. This feature can be used
+      to reduce the latency of memory access, e.g. data is allocated on physical
+      memory near the logical processor. For instance <link linkend="class_numa_fixedsize_stack"> <code>numa_fixedsize_stack</code></link> allocates
+      the stacks of the worker-fibers on the physical memory belonging to the NUMA
+      node of the dedicated logical processor (the worker-thread is pinned to).
+    </para>
+    <section id="job.numa.numa_allocator">
+      <title><anchor id="class_numa_allocator"/><link linkend="job.numa.numa_allocator">Class
+      <code><phrase role="identifier">numa_allocator</phrase></code></link></title>
+<programlisting><phrase role="preprocessor">#include</phrase> <phrase role="special">&lt;</phrase><phrase role="identifier">boost</phrase><phrase role="special">/</phrase><phrase role="identifier">job</phrase><phrase role="special">/</phrase><phrase role="identifier">memory</phrase><phrase role="special">.</phrase><phrase role="identifier">hpp</phrase><phrase role="special">&gt;</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">class</phrase> <phrase role="identifier">numa_allocator</phrase> <phrase role="special">{</phrase>
+<phrase role="keyword">public</phrase><phrase role="special">:</phrase>
+    <phrase role="comment">// type definitions</phrase>
+    <phrase role="keyword">typedef</phrase> <phrase role="identifier">T</phrase>               <phrase role="identifier">value_type</phrase><phrase role="special">;</phrase>
+    <phrase role="keyword">typedef</phrase> <phrase role="identifier">T</phrase>           <phrase role="special">*</phrase>   <phrase role="identifier">pointer</phrase><phrase role="special">;</phrase>
+    <phrase role="keyword">typedef</phrase> <phrase role="identifier">T</phrase>       <phrase role="keyword">const</phrase><phrase role="special">*</phrase>  <phrase role="identifier">const_pointer</phrase><phrase role="special">;</phrase>
+    <phrase role="keyword">typedef</phrase> <phrase role="identifier">T</phrase>           <phrase role="special">&amp;</phrase>   <phrase role="identifier">reference</phrase><phrase role="special">;</phrase>
+    <phrase role="keyword">typedef</phrase> <phrase role="identifier">T</phrase>       <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase>  <phrase role="identifier">const_reference</phrase><phrase role="special">;</phrase>
+    <phrase role="keyword">typedef</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase>     <phrase role="identifier">size_type</phrase><phrase role="special">;</phrase>
+    <phrase role="keyword">typedef</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">ptrdiff_t</phrase>  <phrase role="identifier">difference_type</phrase><phrase role="special">;</phrase>
+
+    <phrase role="comment">// rebind allocator to type U</phrase>
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">U</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="keyword">struct</phrase> <phrase role="identifier">rebind</phrase><phrase role="special">;</phrase>
+
+    <phrase role="identifier">numa_allocator</phrase><phrase role="special">(</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">node_id</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+
+    <phrase role="identifier">numa_allocator</phrase><phrase role="special">(</phrase> <phrase role="identifier">numa_allocator</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">other</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+
+    <phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">U</phrase> <phrase role="special">&gt;</phrase>
+    <phrase role="identifier">numa_allocator</phrase><phrase role="special">(</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">U</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">other</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+
+    <phrase role="special">~</phrase><phrase role="identifier">numa_allocator</phrase><phrase role="special">()</phrase> <phrase role="special">=</phrase> <phrase role="keyword">default</phrase><phrase role="special">;</phrase>
+
+    <phrase role="identifier">pointer</phrase> <phrase role="identifier">address</phrase><phrase role="special">(</phrase> <phrase role="identifier">reference</phrase> <phrase role="identifier">value</phrase><phrase role="special">)</phrase> <phrase role="keyword">const</phrase><phrase role="special">;</phrase>
+    <phrase role="identifier">const_pointer</phrase> <phrase role="identifier">address</phrase><phrase role="special">(</phrase> <phrase role="identifier">const_reference</phrase> <phrase role="identifier">value</phrase><phrase role="special">)</phrase> <phrase role="keyword">const</phrase><phrase role="special">;</phrase>
+
+    <phrase role="identifier">size_type</phrase> <phrase role="identifier">max_size</phrase><phrase role="special">()</phrase> <phrase role="keyword">const</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+
+    <phrase role="identifier">pointer</phrase> <phrase role="identifier">allocate</phrase><phrase role="special">(</phrase> <phrase role="identifier">size_type</phrase> <phrase role="identifier">num</phrase><phrase role="special">,</phrase> <phrase role="keyword">const</phrase> <phrase role="keyword">void</phrase> <phrase role="special">*</phrase> <phrase role="special">=</phrase> <phrase role="number">0</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">void</phrase> <phrase role="identifier">construct</phrase><phrase role="special">(</phrase> <phrase role="identifier">pointer</phrase> <phrase role="identifier">p</phrase><phrase role="special">,</phrase> <phrase role="identifier">T</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">value</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">void</phrase> <phrase role="identifier">destroy</phrase><phrase role="special">(</phrase> <phrase role="identifier">pointer</phrase> <phrase role="identifier">p</phrase><phrase role="special">);</phrase>
+
+    <phrase role="keyword">void</phrase> <phrase role="identifier">deallocate</phrase><phrase role="special">(</phrase> <phrase role="identifier">pointer</phrase> <phrase role="identifier">p</phrase><phrase role="special">,</phrase> <phrase role="identifier">size_type</phrase> <phrase role="identifier">num</phrase><phrase role="special">);</phrase>
+<phrase role="special">};</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T1</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">bool</phrase> <phrase role="keyword">operator</phrase><phrase role="special">==(</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T1</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">l</phrase><phrase role="special">,</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">r</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T1</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">bool</phrase> <phrase role="keyword">operator</phrase><phrase role="special">!=(</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T1</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">l</phrase><phrase role="special">,</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">r</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+
+<phrase role="keyword">void</phrase> <phrase role="special">*</phrase> <phrase role="identifier">numa_alloc</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">size</phrase><phrase role="special">,</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">node_id</phrase><phrase role="special">);</phrase>
+
+<phrase role="keyword">void</phrase> <phrase role="identifier">numa_free</phrase><phrase role="special">(</phrase> <phrase role="keyword">void</phrase> <phrase role="special">*</phrase> <phrase role="identifier">p</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">size</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <bridgehead renderas="sect4" id="job.numa.numa_allocator.h0">
+        <phrase id="job.numa.numa_allocator.constructor"/><link linkend="job.numa.numa_allocator.constructor">Constructor</link>
+      </bridgehead>
+<programlisting><phrase role="identifier">numa_allocator</phrase><phrase role="special">(</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">node_id</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Depending on parameter <code><phrase role="identifier">topology</phrase></code>,
+              <code><phrase role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
+              role="identifier">threads</phrase></code> are created and pinned to
+              the logical processors. Depending on the FiberPool strategy, <code><phrase
+              role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
+              role="identifier">fibers</phrase></code> are launched.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Note:</term>
+          <listitem>
+            <para>
+              Nothing.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <bridgehead renderas="sect4" id="job.numa.numa_allocator.h1">
+        <phrase id="job.numa.numa_allocator.destructor"/><link linkend="job.numa.numa_allocator.destructor">Destructor</link>
+      </bridgehead>
+<programlisting><phrase role="special">~</phrase><phrase role="identifier">numa_allocator</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Destructs allocator.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Throws:</term>
+          <listitem>
+            <para>
+              Nothing.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <bridgehead renderas="sect4" id="job.numa.numa_allocator.h2">
+        <phrase id="job.numa.numa_allocator.copy_constructor"/><link linkend="job.numa.numa_allocator.copy_constructor">Copy
+        Constructor</link>
+      </bridgehead>
+<programlisting><phrase role="identifier">numa_allocator</phrase><phrase role="special">(</phrase> <phrase role="identifier">numa_allocator</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">other</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+
+<phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">U</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="identifier">numa_allocator</phrase><phrase role="special">(</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">U</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">other</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Destructs allocator.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Throws:</term>
+          <listitem>
+            <para>
+              Nothing.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_allocator_address_bridgehead">
+  <phrase id="numa_allocator_address"/>
+  <link linkend="numa_allocator_address">Member
+        function <code>address</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="identifier">pointer</phrase> <phrase role="identifier">address</phrase><phrase role="special">(</phrase> <phrase role="identifier">reference</phrase> <phrase role="identifier">value</phrase><phrase role="special">)</phrase> <phrase role="keyword">const</phrase><phrase role="special">;</phrase>
+<phrase role="identifier">const_pointer</phrase> <phrase role="identifier">address</phrase><phrase role="special">(</phrase> <phrase role="identifier">const_reference</phrase> <phrase role="identifier">value</phrase><phrase role="special">)</phrase> <phrase role="keyword">const</phrase><phrase role="special">;</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_allocator_max_size_bridgehead">
+  <phrase id="numa_allocator_max_size"/>
+  <link linkend="numa_allocator_max_size">Member
+        function <code>max_size</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="identifier">size_type</phrase> <phrase role="identifier">max_size</phrase><phrase role="special">()</phrase> <phrase role="keyword">const</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_allocator_allocate_bridgehead">
+  <phrase id="numa_allocator_allocate"/>
+  <link linkend="numa_allocator_allocate">Member
+        function <code>allocate</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="identifier">pointer</phrase> <phrase role="identifier">allocate</phrase><phrase role="special">(</phrase> <phrase role="identifier">size_type</phrase> <phrase role="identifier">num</phrase><phrase role="special">,</phrase> <phrase role="keyword">const</phrase> <phrase role="keyword">void</phrase> <phrase role="special">*</phrase> <phrase role="special">=</phrase> <phrase role="number">0</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_allocator_construct_bridgehead">
+  <phrase id="numa_allocator_construct"/>
+  <link linkend="numa_allocator_construct">Member
+        function <code>construct</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">void</phrase> <phrase role="identifier">construct</phrase><phrase role="special">(</phrase> <phrase role="identifier">pointer</phrase> <phrase role="identifier">p</phrase><phrase role="special">,</phrase> <phrase role="identifier">T</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">value</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_allocator_destroy_bridgehead">
+  <phrase id="numa_allocator_destroy"/>
+  <link linkend="numa_allocator_destroy">Member
+        function <code>destroy</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">void</phrase> <phrase role="identifier">destroy</phrase><phrase role="special">(</phrase> <phrase role="identifier">pointer</phrase> <phrase role="identifier">p</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_allocator_deallocate_bridgehead">
+  <phrase id="numa_allocator_deallocate"/>
+  <link linkend="numa_allocator_deallocate">Member
+        function <code>deallocate</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">void</phrase> <phrase role="identifier">deallocate</phrase><phrase role="special">(</phrase> <phrase role="identifier">pointer</phrase> <phrase role="identifier">p</phrase><phrase role="special">,</phrase> <phrase role="identifier">size_type</phrase> <phrase role="identifier">num</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Interrupts and joins worker-fibers and -threads.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="id_operator_equal_bridgehead">
+  <phrase id="id_operator_equal"/>
+  <link linkend="id_operator_equal">Member function
+        <code>operator==</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T1</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">bool</phrase> <phrase role="keyword">operator</phrase><phrase role="special">==(</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T1</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">l</phrase><phrase role="special">,</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">r</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              <code><phrase role="keyword">true</phrase></code> if <code><phrase
+              role="special">*</phrase><phrase role="keyword">this</phrase></code>
+              and <code><phrase role="identifier">other</phrase></code> allocate
+              memory for the same NUMA node, <code><phrase role="keyword">false</phrase></code>
+              otherwise.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Throws:</term>
+          <listitem>
+            <para>
+              Nothing.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="id_operator_not_equal_bridgehead">
+  <phrase id="id_operator_not_equal"/>
+  <link linkend="id_operator_not_equal">Member
+        function <code>operator!=</code>()</link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">template</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T1</phrase><phrase role="special">,</phrase> <phrase role="keyword">typename</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase>
+<phrase role="keyword">bool</phrase> <phrase role="keyword">operator</phrase><phrase role="special">!=(</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T1</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">l</phrase><phrase role="special">,</phrase> <phrase role="identifier">numa_allocator</phrase><phrase role="special">&lt;</phrase> <phrase role="identifier">T2</phrase> <phrase role="special">&gt;</phrase> <phrase role="keyword">const</phrase><phrase role="special">&amp;</phrase> <phrase role="identifier">r</phrase><phrase role="special">)</phrase> <phrase role="keyword">throw</phrase><phrase role="special">();</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              <code>! (other == * this)</code>
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Throws:</term>
+          <listitem>
+            <para>
+              Nothing.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_alloc_bridgehead">
+  <phrase id="numa_alloc"/>
+  <link linkend="numa_alloc">Non-member function <code>numa_alloc()</code></link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">void</phrase> <phrase role="special">*</phrase> <phrase role="identifier">numa_alloc</phrase><phrase role="special">(</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">size</phrase><phrase role="special">,</phrase> <phrase role="identifier">uint32_t</phrase> <phrase role="identifier">node_id</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Allocates memory of <code><phrase role="identifier">size</phrase></code>
+              on NUMA node <code><phrase role="identifier">node_id</phrase></code>.
+            </para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>Returns:</term>
+          <listitem>
+            <para>
+              A pointer to the first address of the allocated memory.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>
+        <bridgehead renderas="sect4" id="numa_free_bridgehead">
+  <phrase id="numa_free"/>
+  <link linkend="numa_free">Non-member function <code>numa_free()</code></link>
+</bridgehead>
+      </para>
+<programlisting><phrase role="keyword">void</phrase> <phrase role="identifier">numa_free</phrase><phrase role="special">(</phrase> <phrase role="keyword">void</phrase> <phrase role="special">*</phrase> <phrase role="identifier">p</phrase><phrase role="special">,</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">size_t</phrase> <phrase role="identifier">size</phrase><phrase role="special">);</phrase>
+</programlisting>
+      <variablelist>
+        <title></title>
+        <varlistentry>
+          <term>Effects:</term>
+          <listitem>
+            <para>
+              Deallocates memory <code><phrase role="identifier">p</phrase></code>
+              is pointing to.
+            </para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+  </section>
+  <section id="job.rational">
+    <title><link linkend="job.rational">Rational</link></title>
+    <bridgehead renderas="sect3" id="job.rational.h0">
+      <phrase id="job.rational.tested_compilers"/><link linkend="job.rational.tested_compilers">tested
+      compilers</link>
+    </bridgehead>
+    <para>
+      The library was tested with GCC-5.1.1, Clang-3.6.0 and MSVC-14.0 in c++14-mode.
+    </para>
+    <bridgehead renderas="sect3" id="job.rational.h1">
+      <phrase id="job.rational.supported_architectures"/><link linkend="job.rational.supported_architectures">supported
+      architectures</link>
+    </bridgehead>
+    <para>
+      <emphasis role="bold">Boost.Fiber</emphasis> depends on <ulink url="boost:/libs/context/index.html">Boost.Context</ulink>
+      - the list of supported architectures can be found <ulink url="boost:/libs/context/doc/html/context/architectures.html">here</ulink>.
+    </para>
+    <bridgehead renderas="sect3" id="job.rational.h2">
+      <phrase id="job.rational.numa_support"/><link linkend="job.rational.numa_support">NUMA
+      support</link>
+    </bridgehead>
+    <table frame="all" id="job.rational.numa_support0">
+      <title>NUMA support</title>
+      <tgroup cols="4">
+        <thead>
+          <row>
+            <entry>
+              <para>
+                OS
+              </para>
+            </entry>
+            <entry>
+              <para>
+                processor topology
+              </para>
+            </entry>
+            <entry>
+              <para>
+                memory allocation on NUMA node
+              </para>
+            </entry>
+            <entry>
+              <para>
+                pin thread to logical processor
+              </para>
+            </entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>
+              <para>
+                Linux
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                Windows
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                AIX
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                -<footnote id="job.rational.f0">
+                <para>
+                  incomplete/mapped to malloc()/free()
+                </para>
+                </footnote>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                HP/UX
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                -<footnote id="job.rational.f1">
+                <para>
+                  incomplete/mapped to malloc()/free()
+                </para>
+                </footnote>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                Solaris
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                -<footnote id="job.rational.f2">
+                <para>
+                  incomplete/mapped to malloc()/free()
+                </para>
+                </footnote>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                FreeBSD
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+            <entry>
+              <para>
+                -<footnote id="job.rational.f3">
+                <para>
+                  implementation of NUMA support inside FreeBSD ongoing
+                </para>
+                </footnote>
+              </para>
+            </entry>
+            <entry>
+              <para>
+                +
+              </para>
+            </entry>
+          </row>
+          <row>
+            <entry>
+              <para>
+                MacOS X
+              </para>
+            </entry>
+            <entry>
+              <para>
+                -
+              </para>
+            </entry>
+            <entry>
+              <para>
+                -
+              </para>
+            </entry>
+            <entry>
+              <para>
+                -
+              </para>
+            </entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+    <bridgehead renderas="sect3" id="job.rational.h3">
+      <phrase id="job.rational.notes_to_windows"/><link linkend="job.rational.notes_to_windows">Notes
+      to Windows</link>
+    </bridgehead>
+    <para>
+      On Windows logical processors are identified by a Goup ID (up to 64 processors
+      in one group) and a processor ID (represented by 64bit bitmask). The value
+      for <code><phrase role="identifier">topo_t</phrase><phrase role="special">::</phrase><phrase
+      role="identifier">processor_id</phrase></code> is computed by <emphasis>group_id*64
+      + position of logical processor in the bitmask</emphasis>.
+    </para>
+    <bridgehead renderas="sect3" id="job.rational.h4">
+      <phrase id="job.rational.scheduling"/><link linkend="job.rational.scheduling">Scheduling</link>
+    </bridgehead>
+    <para>
+      The decision to which logical processor a new job has to be scheduled has to
+      be made by made by the code using <emphasis role="bold">Boost.Job</emphasis>.
+      The application using <emphasis role="bold">Boost.Job</emphasis> has a better
+      understanding of the job-graph (for instance which jobs depend on each other,
+      on which physical memory bank is the processed data allocated etc.).
+    </para>
+  </section>
+  <section id="job.todo">
+    <title><link linkend="job.todo">TODO</link></title>
+<programlisting><phrase role="special">*</phrase> <phrase role="identifier">replace</phrase> <phrase role="identifier">current</phrase> <phrase role="identifier">future</phrase> <phrase role="identifier">implementation</phrase> <phrase role="special">(</phrase><phrase role="identifier">allocating</phrase> <phrase role="identifier">memory</phrase><phrase role="special">)</phrase> <phrase role="identifier">by</phrase>
+  <phrase role="identifier">non</phrase><phrase role="special">-</phrase><phrase role="identifier">allocating</phrase> <phrase role="identifier">implementation</phrase> <phrase role="identifier">of</phrase> <phrase role="special">[</phrase><phrase role="error">@</phrase><phrase role="identifier">http</phrase><phrase role="special">://</phrase><phrase role="identifier">github</phrase><phrase role="special">.</phrase><phrase role="identifier">com</phrase><phrase role="special">/</phrase><phrase role="identifier">ned14</phrase><phrase role="special">/</phrase><phrase role="identifier">boost</phrase><phrase role="special">.</phrase><phrase role="identifier">monad</phrase> <phrase role="identifier">boost</phrase><phrase role="special">.</phrase><phrase role="identifier">monad</phrase><phrase role="special">]</phrase>
+  <phrase role="identifier">written</phrase> <phrase role="identifier">by</phrase> <phrase role="identifier">Niall</phrase> <phrase role="identifier">Douglas</phrase>
+<phrase role="special">*</phrase> <phrase role="identifier">custom</phrase> <phrase role="identifier">fiber</phrase> <phrase role="identifier">scheduling</phrase> <phrase role="identifier">algorithm</phrase> <phrase role="identifier">per</phrase> <phrase role="identifier">worker</phrase> <phrase role="identifier">thread</phrase>
+</programlisting>
+  </section>
+</library>
