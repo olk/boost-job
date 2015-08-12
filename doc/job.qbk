@@ -30,18 +30,11 @@ Each job is executed by a worker-fiber running in a worker-thread, thus jobs
 are scheduled cooperativly so that a job can yield to toher jobs during its
 execution. The result of a job is transported via a future.
 
-The worker-thread is pinned to the logical CPU, e.g. the Operating System
-Scheduler does not schedule the thread to another CPU.
-
-Jobs can be synchronized (without blocking the worker-thread) by
-using synchronization objects (like mutex, condtion_variables ...) from
-__boost_fiber__. For instance a job can wait for the result of a sub-job using
-`boost::fibers::future<>` (spawning sub-job by calling __sched_csubmit__)
-without blocking the worker-thread on which it is executed. It doesn't matter
-to which logical CPU the sub-job was submitted.
+The worker-thread is pinned to the logical processor, e.g. the Operating System
+Scheduler does not schedule the thread to another processor.
 
 Class __scheduler__ manages the worker-fibers (creating and pinning on logical
-CPU) and gives access to the different worker-threads via __sched_psubmit__ and
+processor) and gives access to the different worker-threads via __sched_psubmit__ and
 __sched_csubmit__.
 The worker-threads and their worker-fibers are interrupted and joined by calling
 __sched_shutdown__.
@@ -51,7 +44,7 @@ __sched_shutdown__.
                               boost::jobs::static_pool< 3 >() );
     int n = 10;
     std::future< int > f = s.submit_preempt(
-              0, // execute job on logical CPU `0`
+              0, // execute job on logical processor `0`
               // pass job-function
               [n](){
                   int first = 1, second = 1, third = -1;
@@ -68,6 +61,51 @@ __sched_shutdown__.
 
 Exception thrown inside the job function are catched and transported via the
 returned future.
+
+Jobs can be synchronized (without blocking the worker-thread) by
+using synchronization objects (like mutex, condtion_variables ...) from
+__boost_fiber__. For instance a job can wait for the result of a sub-job using
+`boost::fibers::future<>` (spawning sub-job by calling __sched_csubmit__)
+without blocking the worker-thread on which it is executed. It doesn't matter
+to which logical processor the sub-job was submitted.
+
+    boost::jobs::scheduler s( topo, boost::jobs::static_pool< 2 >() );
+    boost::fibers::mutex mtx;
+    boost::fibers::condition_variable cond;
+    int i = 0;
+    std::future< void > f1 = s.submit_preempt( topo[0].processor_id,
+              [&mtx,&cond, &i](){
+                  // aquire lock on mutex, might be happen before the other jobs tries to aquire lock
+                  std::unique_lock< boost::fibers::mutex > lk( mtx);
+                  // wait for synchronizing shared variable `i`
+                  // will suspended current job
+                  // other jobs running on this worker-thread are able be resumed/executed
+                  cond.wait( lk, [&i](){ return 0 != i; });
+                  // resumed because notified by other job
+                  std::cout << "fiber " << boost::this_fiber::get_id() << ": received: " << i << std::endl;
+              });
+    std::future< void > f2 = s.submit_preempt( topo[1].processor_id,
+              [&mtx,&cond, &i](){
+                  // sleep for one seconds
+                  boost::this_fiber::sleep_for( std::chrono::seconds( 1) );
+                  // aquire lock on mutex
+                  std::unique_lock< boost::fibers::mutex > lk( mtx);
+                  // modify shard variable
+                  i = 7;
+                  // notify other job
+                  cond.notify_all();
+                  std::cout << "fiber " << boost::this_fiber::get_id() << ": sent: " << i << std::endl;
+                  // release lock
+                  lk.unlock();
+              });
+    f1.wait();
+    f2.wait();
+
+In the example above a mutex and a condition-variable are used to synchronize
+two jobs running on different logical processors. The worker-threads are not
+blocked, e.g. if one of the two jobs is waiting for a notification (inside
+`condition_variable::wait()`) other jobs (== worker-fibers) on that
+logical processor are able to be resumed/executed.
 
 
 [#class_scheduler]
@@ -122,7 +160,7 @@ returned future.
 
 [variablelist
 [[Effects:] [Depending on parameter `topology`, `worker-threads` are created and
-pinned to the logical CPUs. Depending on the FiberPool strategy, `worker-fibers`
+pinned to the logical processors. Depending on the FiberPool strategy, `worker-fibers`
 are launched.]]
 [[Note:] [StackAllocator is required to allocate a stack for the internal
 `worker-fibers`. If StackAllocator is not explicitly passed, a
@@ -151,7 +189,7 @@ used if no FiberPool is specified]]
 
 [variablelist
 [[Returns:] [a `std::future` associated with the job.]]
-[[Note:] [The job is executed by the worker-thread running on logical CPU
+[[Note:] [The job is executed by the worker-thread running on logical processor
 `cpuid`. If no Allocator is passed, __numa_allocator__ is used.]]
 ]
 
@@ -167,7 +205,7 @@ used if no FiberPool is specified]]
 
 [variablelist
 [[Returns:] [a `boost:.fibers::future` associated with the job.]]
-[[Note:] [The job is executed by the worker-thread running on logical CPU
+[[Note:] [The job is executed by the worker-thread running on logical processor
 `cpuid`. If no Allocator is passed, __numa_allocator__ is used.]]
 ]
 

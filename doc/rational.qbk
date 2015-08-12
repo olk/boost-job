@@ -21,14 +21,32 @@ can be found [@boost:/libs/context/doc/html/context/architectures.html here].
 [heading NUMA support]
 
 [table NUMA support
-    [[OS]       [CPU topology]  [memory allocation on NUMA node]  [pin thread to logical CPU]]
+    [[OS]       [processor topology]  [memory allocation on NUMA node]  [pin thread to logical processor]]
     [[Linux]    [+]             [+]                               [+]]
     [[Windows]  [+]             [+]                               [+]]
-    [[AIX]      [+]             [-[footnote incomplete/not yet implemented]]                               [+]]
-    [[HP/UX]    [+]             [-[footnote incomplete/not yet implemented]]                               [+]]
-    [[Solaris]  [+]             [-[footnote incomplete/not yet implemented]]                               [+]]
-    [[FreeBSD]  [+]             [-[footnote kernel developers have not yet finished NUMA support]                               [+]]
+    [[AIX]      [+]             [-[footnote incomplete/mapped to malloc()/free()]]                               [+]]
+    [[HP/UX]    [+]             [-[footnote incomplete/mapped to malloc()/free()]]                               [+]]
+    [[Solaris]  [+]             [-[footnote incomplete/mapped to malloc()/free()]]                               [+]]
+    [[FreeBSD]  [+]             [-[footnote implementation of NUMA support inside FreeBSD ongoing]                               [+]]
     [[MacOS X]  [-]             [-]                               [-]]
 ]
+
+
+[heading Notes to Windows]
+
+On Windows logical processors are identified by a Goup ID (up to 64 processors
+in one group) and a processor ID (represented by 64bit bitmask). The value for
+`topo_t::processor_id` is computed by ['group_id*64 + position of logical processor in
+the bitmask].
+
+
+[heading Scheduling]
+
+The decision to which logical processor a new job has to be scheduled has to be
+made by made by the code using __boost_job__. The application using
+__boost_job__ has a better understanding of the job-graph (for instance which
+jobs depend on each other, on which physical memory bank is the processed data
+allocated etc.).
+
 
 [endsect]

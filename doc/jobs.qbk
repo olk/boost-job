@@ -10,7 +10,7 @@
     [authors [Kowalke, Oliver]]
     [copyright 2015 Oliver Kowalke]
     [id job]
-    [purpose C++ Library schedule jobs on CPUs]
+    [purpose C++ Library schedule jobs on processors]
     [category text]
     [license
         Distributed under the Boost Software License, Version 1.0.

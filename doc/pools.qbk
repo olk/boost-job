@@ -44,14 +44,14 @@ fiber pool.
     struct static_pool {
         template< typename StackAllocator >
         void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                         detail::queue * q, detail::rendezvous * ntfy);
+                         detail::queue * q, detail::rendezvous * rdzv);
     };
 
 [template_member_heading static_pool..operator()]
 
         template< typename StackAllocator >
         void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                         detail::queue * q, detail::rendezvous * ntfy);
+                         detail::queue * q, detail::rendezvous * rdzv);
 
 [variablelist
 [[Effects:] [Creates `N` worker-fibers and connects them with the job queue
@@ -74,19 +74,20 @@ Before this function returns all worker-fibers are interrupted and joined.]]
     public:
         template< typename StackAllocator >
         void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                         detail::queue * q, detail::rendezvous * ntfy);
+                         detail::queue * q, detail::rendezvous * rdzv);
     };
 
 [template_member_heading dynamic_pool..operator()]
 
         template< typename StackAllocator >
         void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                         detail::queue * q, detail::rendezvous * ntfy);
+                         detail::queue * q, detail::rendezvous * rdzv);
 
 [variablelist
 [[Effects:] [Creates `Min` worker-fibers and connects them with the job queue
 of the worker-thread. If job queue is not empty or no worker-fibers are ready
-to run, a new worker-fiber is spawned until `Max` worker-fibers are running.
+to run than `N`, a new worker-fiber will be spawned until `Max` worker-fibers
+are running.
 A worker.fiber gets removed (destroyed) if the job-queue is empty,
 worker-fibers are ready to run and more than `Min` worker-fibers are running.
 Before this function returns all worker-fibers are interrupted and joined.]]

@@ -16,7 +16,7 @@
 
     struct topo_t {
         uint32_t                node_id;
-        uint32_t                cpu_id;
+        uint32_t                processor_id;
         std::set< uint32_t >    l1_shared_with;
         std::set< uint32_t >    l2_shared_with;
         std::set< uint32_t >    l3_shared_with;
@@ -30,13 +30,13 @@
 
     }}}
 
-__boost_job__ provides function __cpu_topology__ to inspect which logical CPUs
-are online. The returned structure contains the ID of logical CPU [footnote On
-Windows] are online, the ID of the NUMA node to which the logical CPU belongs
-and with which other logical CPUs L1/L2/L3 cache is shared [footnore not all
+__boost_job__ provides function __cpu_topology__ to inspect which logical processors
+are online. The returned structure contains the ID of logical processor [footnote On
+Windows] are online, the ID of the NUMA node to which the logical processor belongs
+and with which other logical processors L1/L2/L3 cache is shared [footnore not all
 platforms supported].
-This information is used internally to pin worker threads to logical CPUs and
-which logical CPU is aprobriate for a job (memory latency).
+This information is used internally to pin worker threads to logical processors and
+which logical processor is aprobriate for a job (memory latency).
 
 [#class_topo_t]
 [section:topo_t Class `topo_t`]
@@ -48,7 +48,7 @@ which logical CPU is aprobriate for a job (memory latency).
 
     struct topo_t {
         uint32_t                node_id;
-        uint32_t                cpu_id;
+        uint32_t                processor_id;
         std::set< uint32_t >    l1_shared_with;
         std::set< uint32_t >    l2_shared_with;
         std::set< uint32_t >    l3_shared_with;
@@ -63,7 +63,7 @@ which logical CPU is aprobriate for a job (memory latency).
     std::vector< topo_t > cpu_topology();
 
 [variablelist
-[[Returns:] [vector of topo_t structures of logical CPUs, which are online.]]
+[[Returns:] [vector of topo_t structures of logical processors, which are online.]]
 ]
 
 [endsect] [/ section Class topo_t]

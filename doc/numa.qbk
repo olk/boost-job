@@ -23,10 +23,14 @@
 
     }}
 
-__boost_job__ offers functionallity to allcoate physical memory on
+__boost_job__ offers functionallity to allocate physical memory on
 the memory banks of a NUMA note [footnote NUMA == non-uniform memory access],
-to which a logical CPU belongs.
-__nfixedsize_stack__ is used to allocate the stacks of the worker-fibers.
+to which a logical processor belongs.
+This feature can be used to reduce the latency of memory access, e.g. data 
+is allocated on physical memory near the logical processor.
+For instance __nfixedsize_stack__ allocates the stacks of the worker-fibers on
+the physical memory belonging to the NUMA node of the deticated logical processor
+(the worker-thread is pinend to).
 
 [#class_numa_allocator]
 [section:numa_allocator Class `numa_allocator`]
@@ -78,9 +82,128 @@ __nfixedsize_stack__ is used to allocate the stacks of the worker-fibers.
     template< typename T1, typename T2 >
     bool operator!=( numa_allocator< T1 > const& l, numa_allocator< T2 > const& r) throw();
 
-    void * numa_alloc( std::size_t, uint32_t);
+    void * numa_alloc( std::size_t size, uint32_t node_id);
 
-    void numa_free( void *, std::size_t);
+    void numa_free( void * p, std::size_t size);
+
+[heading Constructor]
+
+    numa_allocator( uint32_t node_id) throw();
+
+[variablelist
+[[Effects:] [Depending on parameter `topology`, `worker-threads` are created and
+pinned to the logical processors. Depending on the FiberPool strategy, `worker-fibers`
+are launched.]]
+[[Note:] [Nothing.]]
+]
+
+[heading Destructor]
+
+    ~numa_allocator();
+
+[variablelist
+[[Effects:] [Destructs allocator.]]
+[[Throws:] [Nothing.]]
+]
+
+[heading Copy Constructor]
+
+    numa_allocator( numa_allocator const& other) throw();
+ 
+    template< typename U >
+    numa_allocator( numa_allocator< U > const& other) throw();
+
+[variablelist
+[[Effects:] [Destructs allocator.]]
+[[Throws:] [Nothing.]]
+]
+
+[member_heading numa_allocator..address]
+
+   pointer address( reference value) const;
+   const_pointer address( const_reference value) const;
+
+[variablelist
+[[Effects:] [Interrupts and joins worker-fibers and -threads.]]
+]
+
+[member_heading numa_allocator..max_size]
+
+    size_type max_size() const throw();
+
+[variablelist
+[[Effects:] [Interrupts and joins worker-fibers and -threads.]]
+]
+
+[member_heading numa_allocator..allocate]
+
+    pointer allocate( size_type num, const void * = 0);
+
+[variablelist
+[[Effects:] [Interrupts and joins worker-fibers and -threads.]]
+]
+
+[member_heading numa_allocator..construct]
+
+    void construct( pointer p, T const& value);
+
+[variablelist
+[[Effects:] [Interrupts and joins worker-fibers and -threads.]]
+]
+
+[member_heading numa_allocator..destroy]
+
+    void destroy( pointer p);
+
+[variablelist
+[[Effects:] [Interrupts and joins worker-fibers and -threads.]]
+]
+
+[member_heading numa_allocator..deallocate]
+
+    void deallocate( pointer p, size_type num);
+
+[variablelist
+[[Effects:] [Interrupts and joins worker-fibers and -threads.]]
+]
+
+[operator_heading id..operator_equal..operator==]
+
+    template< typename T1, typename T2 >
+    bool operator==( numa_allocator< T1 > const& l, numa_allocator< T2 > const& r) throw();
+
+[variablelist
+[[Returns:] [`true` if `*this` and `other` allocate memory for the same NUMA node,
+`false` otherwise.]]
+[[Throws:] [Nothing.]]
+]
+
+[operator_heading id..operator_not_equal..operator!=]
+
+    template< typename T1, typename T2 >
+    bool operator!=( numa_allocator< T1 > const& l, numa_allocator< T2 > const& r) throw();
+
+[variablelist
+[[Returns:] [[`! (other == * this)]]]
+[[Throws:] [Nothing.]]
+]
+
+[function_heading numa_alloc]
+
+    void * numa_alloc( std::size_t size, uint32_t node_id);
+
+[variablelist
+[[Effects:] [Allocates memory of `size` on NUMA node `node_id`.]]
+[[Returns:] [A pointer to the first address of the allocated memory.]]
+]
+
+[function_heading numa_free]
+
+    void numa_free( void * p, std::size_t size);
+
+[variablelist
+[[Effects:] [Deallocates memory `p` is pointing to.]]
+]
 
 [endsect] [/ section Class numa_allocator]
 
