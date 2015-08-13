@@ -26,12 +26,12 @@ exe topology
     : topology.cpp
     ;
 
-exe fibonacci1
-    : fibonacci1.cpp
+exe fibonacci
+    : fibonacci.cpp
     ;
 
-exe fibonacci2
-    : fibonacci2.cpp
+exe dependent_jobs
+    : dependent_jobs.cpp
     ;
 
 exe synchronize

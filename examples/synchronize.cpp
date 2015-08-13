@@ -39,6 +39,7 @@ int main( int argc, char * argv[]) {
               });
     std::future< void > f2 = s.submit_preempt( topo[1].processor_id,
               [&mtx,&cond, &i](){
+                  std::cout << "fiber " << boost::this_fiber::get_id() << ": sleep for 1sec" << std::endl;
                   // sleep for one seconds
                   boost::this_fiber::sleep_for( std::chrono::seconds( 1) );
                   // aquire lock on mutex
