@@ -48,11 +48,11 @@
 </pre>
 <p>
       <span class="bold"><strong>Boost.Job</strong></span> offers functionality to allocate
-      physical memory on the memory banks of a NUMA note <sup>[<a name="job.numa.f0" href="#ftn.job.numa.f0" class="footnote">5</a>]</sup>, to which a logical processor belongs. This feature can be used
-      to reduce the latency of memory access, e.g. data is allocated on physical
-      memory near the logical processor. For instance <a class="link" href="stack.html#class_numa_fixedsize_stack"> <code class="computeroutput">numa_fixedsize_stack</code></a> allocates
-      the stacks of the worker-fibers on the physical memory belonging to the NUMA
-      node of the dedicated logical processor (the worker-thread is pinned to).
+      physical memory on the memory banks of a NUMA note <sup>[<a name="job.numa.f0" href="#ftn.job.numa.f0" class="footnote">5</a>]</sup>. This feature can be used to reduce the latency of memory access,
+      e.g. data is allocated on physical memory near the logical processor. For instance
+      <a class="link" href="stack.html#class_numa_fixedsize_stack"> <code class="computeroutput">numa_fixedsize_stack</code></a> allocates the stacks of worker-fibers
+      on the physical memory belonging to the NUMA node of the dedicated logical
+      processor.
     </p>
 <div class="footnotes">
 <br><hr width="100" align="left">

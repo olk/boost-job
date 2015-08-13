@@ -26,16 +26,17 @@
 
 A job is a small unit of code that can be executed independently and parallel,
 e.g. it's a fain-grained work item.
-Each job is executed by a worker-fiber running in a worker-thread, thus jobs
-are scheduled cooperatively so that a job can yield to other jobs during its
+Each job is executed by a worker-fiber, running in a worker-thread. Fibers are
+scheduled cooperatively so that a job can yield to other jobs during its
 execution. The result of a job is transported via a future.
 
-The worker-thread is pinned to the logical processor, e.g. the Operating System
-Scheduler does not schedule the thread to another processor.
+The worker-thread is pinned to the logical processor, e.g. the OS-ssScheduler
+does not schedule the thread to another processor.
 
 Class __scheduler__ manages the worker-fibers (creating and pinning on logical
-processor) and gives access to the different worker-threads via __sched_psubmit__ and
-__sched_csubmit__.
+processor) and gives access to the different worker-threads via
+__sched_psubmit__ (blocks thread in `get()`) and __sched_csubmit__ (does not
+block thread in `get()`).
 The worker-threads and their worker-fibers are interrupted and joined by calling
 __sched_shutdown__.
 
@@ -107,6 +108,37 @@ blocked, e.g. if one of the two jobs is waiting for a notification (inside
 `condition_variable::wait()`) other jobs (== worker-fibers) on that
 logical processor are able to be resumed/executed.
 
+The library solves the many-dependeint-jobs problem - N jobs are waiting on 
+other jobs (maybe result of computation or some event) while M worker-threads
+service the job system. Without cooperative scheduling the system would block
+if M << N.
+
+    int fibonacci( int n) {
+        if ( 1 == n || 2 == n) {
+            return 1;
+        }
+        // create sub-job
+        boost::fibers::future< int > f1 = boost::jobs::this_worker::submit(
+                fibonacci, n - 2);
+        // create sub-job
+        boost::fibers::future< int > f2 = boost::jobs::this_worker::submit(
+                fibonacci, n - 1);
+        // wait on results of sub-jobs
+        return f1.get() + f2.get();
+    }
+
+    int n = 5;
+    boost::jobs::scheduler s( boost::jobs::cpu_topology()
+                              boost::jobs::dynamic_pool< 1, 4 >() );
+    std::future< int > f = s.submit_preempt( 0, fibonacci, n);
+    std::cout << "fibonacci(" << n << ") = " << f.get() << std::endl;
+    std::cout << "main: done" << std::endl;
+
+In the example above function `fibonacci()` creates a graph of sub-jobs.
+Each sub-job itself creates a graph of sub-jobs - in summary 9 jobs are
+processed for fibonacci( 5).
+
+
 
 [#class_scheduler]
 [section:scheduler Class `scheduler`]
@@ -159,13 +191,13 @@ logical processor are able to be resumed/executed.
         scheduler( std::vector< topo_t > const& topology);
 
 [variablelist
-[[Effects:] [Depending on parameter `topology`, `worker-threads` are created and
-pinned to the logical processors. Depending on the FiberPool strategy, `worker-fibers`
-are launched.]]
-[[Note:] [StackAllocator is required to allocate a stack for the internal
-`worker-fibers`. If StackAllocator is not explicitly passed, a
-__nfixedsize_stack__ is used by default. __spool__ for 64 `worker-fibers` is
-used if no FiberPool is specified]]
+[[Effects:] [Depending on parameter `topology`, worker-threads are created and
+pinned to the logical processors. The FiberPool strategy determines how
+worker-fibers are launched.]]
+[[Note:] [StackAllocator is required to allocate a stack used by the
+worker-fibers. If StackAllocator is not explicitly passed __nfixedsize_stack__
+is used by default. As default fiber pool __spool__ with 64 worker-fibers is
+used.]]
 ]
 
 [heading Destructor]
@@ -190,7 +222,9 @@ used if no FiberPool is specified]]
 [variablelist
 [[Returns:] [a `std::future` associated with the job.]]
 [[Note:] [The job is executed by the worker-thread running on logical processor
-`cpuid`. If no Allocator is passed, __numa_allocator__ is used.]]
+wht the ID `cpuid`. If no Allocator is passed, __numa_allocator__ is used.
+Calling `std::future<>::get()` inside a job is not adviced because it could
+block the worker-thread.]]
 ]
 
 [template_member_heading scheduler..submit_coop]
@@ -206,7 +240,9 @@ used if no FiberPool is specified]]
 [variablelist
 [[Returns:] [a `boost:.fibers::future` associated with the job.]]
 [[Note:] [The job is executed by the worker-thread running on logical processor
-`cpuid`. If no Allocator is passed, __numa_allocator__ is used.]]
+with ID `cpuid`. If no Allocator is passed, __numa_allocator__ is used.
+Calling `boost::fibers::future<>::get()` inside a job is save because it does
+[*not] block the worker-thread.]]
 ]
 
 [member_heading scheduler..shutdown]
@@ -243,6 +279,8 @@ used if no FiberPool is specified]]
 [variablelist
 [[Effects:] [The job associated with `fn` is executed within this worker-thread.]]
 [[Returns:] [Future associated with the result of the submitted job.]]
+[[Note:] [This function can only be called from a job. The sub-job is processed
+by the worker-thread of the parent-job.]]
 ]
 
 [endsect] [/ section Namespace this_worker]

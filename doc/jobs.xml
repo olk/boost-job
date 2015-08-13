@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE library PUBLIC "-//Boost//DTD BoostBook XML V1.0//EN" "http://www.boost.org/tools/boostbook/dtd/boostbook.dtd">
-<library id="job" name="Job" dirname="job" last-revision="$Date: 2015/08/12 16:45:16 $"
+<library id="job" name="Job" dirname="job" last-revision="$Date: 2015/08/13 16:29:09 $"
  xmlns:xi="http://www.w3.org/2001/XInclude">
   <libraryinfo>
     <authorgroup>
@@ -32,18 +32,19 @@
         A job is a small unit of code that can be executed independently and parallel,
         e.g. it's a fain-grained work item
       </para>
-      </footnote> of arbitrary dependency, e.g. solving the many-dependent-jobs problem
-      (M: worker jobs, N: jobs waiting for other jobs; M &lt;&lt; N).
+      </footnote> of arbitrary dependency, e.g. the library solves the many-dependent-jobs
+      problem (M: worker threads, N: jobs waiting on other jobs; M &lt;&lt; N).
     </para>
     <para>
       Each (logical) processor of a dedicated processor set (configurable) gets a
-      worker-thread assigned. Each worker-thread runs a fiber-pool (launch policy
-      is customizable). A submitted job is always executed by a worker-fiber. By
-      using <emphasis role="bold">Boost.Fiber</emphasis> jobs are scheduled cooperatively
-      so that a job can yield to other jobs during its execution. Jobs can be synchronized
-      via primitives like mutex's, conditions, barriers and channels (message exchange)
-      from <emphasis role="bold">Boost.Fiber</emphasis> without blocking the worker-thread.
-      Fibers provide a fast context switch.
+      worker-thread assigned (the worker-thread is pinned to the logical processor;
+      the OS-scheudler does not re-scheduled it to another logical processor). Each
+      worker-thread runs a fiber-pool (launch policy, customizable). A submitted
+      job is always executed by a worker-fiber. While utilizing <emphasis role="bold">Boost.Fiber</emphasis>,
+      jobs are scheduled cooperatively so that a job can yield to other jobs during
+      its execution. Jobs can be synchronized via primitives like mutex's, conditions,
+      barriers and channels (message exchange) provided by <emphasis role="bold">Boost.Fiber</emphasis>
+      without blocking the worker-thread. Fibers provide a fast context switch.
     </para>
     <para>
       <emphasis role="bold">Boost.Job</emphasis> supports to inspect the NUMA topology
@@ -108,20 +109,23 @@
 </programlisting>
     <para>
       A job is a small unit of code that can be executed independently and parallel,
-      e.g. it's a fain-grained work item. Each job is executed by a worker-fiber
-      running in a worker-thread, thus jobs are scheduled cooperatively so that a
-      job can yield to other jobs during its execution. The result of a job is transported
+      e.g. it's a fain-grained work item. Each job is executed by a worker-fiber,
+      running in a worker-thread. Fibers are scheduled cooperatively so that a job
+      can yield to other jobs during its execution. The result of a job is transported
       via a future.
     </para>
     <para>
-      The worker-thread is pinned to the logical processor, e.g. the Operating System
-      Scheduler does not schedule the thread to another processor.
+      The worker-thread is pinned to the logical processor, e.g. the OS-ssScheduler
+      does not schedule the thread to another processor.
     </para>
     <para>
       Class <link linkend="class_scheduler"> <code>scheduler</code></link> manages the worker-fibers (creating and pinning
       on logical processor) and gives access to the different worker-threads via
-      <link linkend="scheduler_submit_preempt"> <code>scheduler::submit_preempt()</code></link> and <link linkend="scheduler_submit_coop"> <code>scheduler::submit_coop()</code></link>.
-      The worker-threads and their worker-fibers are interrupted and joined by calling
+      <link linkend="scheduler_submit_preempt"> <code>scheduler::submit_preempt()</code></link> (blocks thread in <code><phrase
+      role="identifier">get</phrase><phrase role="special">()</phrase></code>) and
+      <link linkend="scheduler_submit_coop"> <code>scheduler::submit_coop()</code></link> (does not block thread in <code><phrase
+      role="identifier">get</phrase><phrase role="special">()</phrase></code>). The
+      worker-threads and their worker-fibers are interrupted and joined by calling
       <link linkend="scheduler_shutdown"> <code>scheduler::shutdown()</code></link>.
     </para>
 <programlisting><phrase role="comment">// create scheduler, each worker-thread runs 3 worker-fibers</phrase>
@@ -198,6 +202,39 @@
       role="identifier">wait</phrase><phrase role="special">()</phrase></code>) other
       jobs (== worker-fibers) on that logical processor are able to be resumed/executed.
     </para>
+    <para>
+      The library solves the many-dependeint-jobs problem - N jobs are waiting on
+      other jobs (maybe result of computation or some event) while M worker-threads
+      service the job system. Without cooperative scheduling the system would block
+      if M &lt;&lt; N.
+    </para>
+<programlisting><phrase role="keyword">int</phrase> <phrase role="identifier">fibonacci</phrase><phrase role="special">(</phrase> <phrase role="keyword">int</phrase> <phrase role="identifier">n</phrase><phrase role="special">)</phrase> <phrase role="special">{</phrase>
+    <phrase role="keyword">if</phrase> <phrase role="special">(</phrase> <phrase role="number">1</phrase> <phrase role="special">==</phrase> <phrase role="identifier">n</phrase> <phrase role="special">||</phrase> <phrase role="number">2</phrase> <phrase role="special">==</phrase> <phrase role="identifier">n</phrase><phrase role="special">)</phrase> <phrase role="special">{</phrase>
+        <phrase role="keyword">return</phrase> <phrase role="number">1</phrase><phrase role="special">;</phrase>
+    <phrase role="special">}</phrase>
+    <phrase role="comment">// create sub-job</phrase>
+    <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">int</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">f1</phrase> <phrase role="special">=</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">this_worker</phrase><phrase role="special">::</phrase><phrase role="identifier">submit</phrase><phrase role="special">(</phrase>
+            <phrase role="identifier">fibonacci</phrase><phrase role="special">,</phrase> <phrase role="identifier">n</phrase> <phrase role="special">-</phrase> <phrase role="number">2</phrase><phrase role="special">);</phrase>
+    <phrase role="comment">// create sub-job</phrase>
+    <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">int</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">f2</phrase> <phrase role="special">=</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">this_worker</phrase><phrase role="special">::</phrase><phrase role="identifier">submit</phrase><phrase role="special">(</phrase>
+            <phrase role="identifier">fibonacci</phrase><phrase role="special">,</phrase> <phrase role="identifier">n</phrase> <phrase role="special">-</phrase> <phrase role="number">1</phrase><phrase role="special">);</phrase>
+    <phrase role="comment">// wait on results of sub-jobs</phrase>
+    <phrase role="keyword">return</phrase> <phrase role="identifier">f1</phrase><phrase role="special">.</phrase><phrase role="identifier">get</phrase><phrase role="special">()</phrase> <phrase role="special">+</phrase> <phrase role="identifier">f2</phrase><phrase role="special">.</phrase><phrase role="identifier">get</phrase><phrase role="special">();</phrase>
+<phrase role="special">}</phrase>
+
+<phrase role="keyword">int</phrase> <phrase role="identifier">n</phrase> <phrase role="special">=</phrase> <phrase role="number">5</phrase><phrase role="special">;</phrase>
+<phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">scheduler</phrase> <phrase role="identifier">s</phrase><phrase role="special">(</phrase> <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">cpu_topology</phrase><phrase role="special">()</phrase>
+                          <phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase role="identifier">jobs</phrase><phrase role="special">::</phrase><phrase role="identifier">dynamic_pool</phrase><phrase role="special">&lt;</phrase> <phrase role="number">1</phrase><phrase role="special">,</phrase> <phrase role="number">4</phrase> <phrase role="special">&gt;()</phrase> <phrase role="special">);</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">future</phrase><phrase role="special">&lt;</phrase> <phrase role="keyword">int</phrase> <phrase role="special">&gt;</phrase> <phrase role="identifier">f</phrase> <phrase role="special">=</phrase> <phrase role="identifier">s</phrase><phrase role="special">.</phrase><phrase role="identifier">submit_preempt</phrase><phrase role="special">(</phrase> <phrase role="number">0</phrase><phrase role="special">,</phrase> <phrase role="identifier">fibonacci</phrase><phrase role="special">,</phrase> <phrase role="identifier">n</phrase><phrase role="special">);</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">cout</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;fibonacci(&quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">n</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;) = &quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">f</phrase><phrase role="special">.</phrase><phrase role="identifier">get</phrase><phrase role="special">()</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">endl</phrase><phrase role="special">;</phrase>
+<phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">cout</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="string">&quot;main: done&quot;</phrase> <phrase role="special">&lt;&lt;</phrase> <phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase role="identifier">endl</phrase><phrase role="special">;</phrase>
+</programlisting>
+    <para>
+      In the example above function <code><phrase role="identifier">fibonacci</phrase><phrase
+      role="special">()</phrase></code> creates a graph of sub-jobs. Each sub-job
+      itself creates a graph of sub-jobs - in summary 9 jobs are processed for fibonacci(
+      5).
+    </para>
     <section id="job.job_mgmt.scheduler">
       <title><anchor id="class_scheduler"/><link linkend="job.job_mgmt.scheduler">Class
       <code><phrase role="identifier">scheduler</phrase></code></link></title>
@@ -256,11 +293,8 @@
           <listitem>
             <para>
               Depending on parameter <code><phrase role="identifier">topology</phrase></code>,
-              <code><phrase role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
-              role="identifier">threads</phrase></code> are created and pinned to
-              the logical processors. Depending on the FiberPool strategy, <code><phrase
-              role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
-              role="identifier">fibers</phrase></code> are launched.
+              worker-threads are created and pinned to the logical processors. The
+              FiberPool strategy determines how worker-fibers are launched.
             </para>
           </listitem>
         </varlistentry>
@@ -268,14 +302,11 @@
           <term>Note:</term>
           <listitem>
             <para>
-              StackAllocator is required to allocate a stack for the internal <code><phrase
-              role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
-              role="identifier">fibers</phrase></code>. If StackAllocator is not
-              explicitly passed, a <link linkend="class_numa_fixedsize_stack"> <code>numa_fixedsize_stack</code></link> is
-              used by default. <link linkend="class_static_pool"> <code>static_pool&lt;&gt;</code></link> for 64 <code><phrase
-              role="identifier">worker</phrase><phrase role="special">-</phrase><phrase
-              role="identifier">fibers</phrase></code> is used if no FiberPool is
-              specified
+              StackAllocator is required to allocate a stack used by the worker-fibers.
+              If StackAllocator is not explicitly passed <link linkend="class_numa_fixedsize_stack"> <code>numa_fixedsize_stack</code></link>
+is
+              used by default. As default fiber pool <link linkend="class_static_pool"> <code>static_pool&lt;&gt;</code></link> with
+              64 worker-fibers is used.
             </para>
           </listitem>
         </varlistentry>
@@ -335,8 +366,12 @@
           <listitem>
             <para>
               The job is executed by the worker-thread running on logical processor
-              <code><phrase role="identifier">cpuid</phrase></code>. If no Allocator
-              is passed, <link linkend="class_numa_allocator"> <code>numa_allocator&lt;&gt;</code></link> is used.
+              wht the ID <code><phrase role="identifier">cpuid</phrase></code>. If
+              no Allocator is passed, <link linkend="class_numa_allocator"> <code>numa_allocator&lt;&gt;</code></link> is
+              used. Calling <code><phrase role="identifier">std</phrase><phrase role="special">::</phrase><phrase
+              role="identifier">future</phrase><phrase role="special">&lt;&gt;::</phrase><phrase
+              role="identifier">get</phrase><phrase role="special">()</phrase></code>
+              inside a job is not adviced because it could block the worker-thread.
             </para>
           </listitem>
         </varlistentry>
@@ -373,8 +408,14 @@
           <listitem>
             <para>
               The job is executed by the worker-thread running on logical processor
-              <code><phrase role="identifier">cpuid</phrase></code>. If no Allocator
-              is passed, <link linkend="class_numa_allocator"> <code>numa_allocator&lt;&gt;</code></link> is used.
+              with ID <code><phrase role="identifier">cpuid</phrase></code>. If no
+              Allocator is passed, <link linkend="class_numa_allocator"> <code>numa_allocator&lt;&gt;</code></link> is used.
+              Calling <code><phrase role="identifier">boost</phrase><phrase role="special">::</phrase><phrase
+              role="identifier">fibers</phrase><phrase role="special">::</phrase><phrase
+              role="identifier">future</phrase><phrase role="special">&lt;&gt;::</phrase><phrase
+              role="identifier">get</phrase><phrase role="special">()</phrase></code>
+              inside a job is save because it does <emphasis role="bold">not</emphasis>
+              block the worker-thread.
             </para>
           </listitem>
         </varlistentry>
@@ -444,6 +485,15 @@
             </para>
           </listitem>
         </varlistentry>
+        <varlistentry>
+          <term>Note:</term>
+          <listitem>
+            <para>
+              This function can only be called from a job. The sub-job is processed
+              by the worker-thread of the parent-job.
+            </para>
+          </listitem>
+        </varlistentry>
       </variablelist>
     </section>
   </section>
@@ -478,7 +528,8 @@
       inspect which logical processors are online. The returned structure contains
       the ID of logical processor <footnote id="job.topology.f0">
       <para>
-        On Windows
+        On Windows a logical processor is identified by the processor group ID and
+        the position in a 64bit bitmask
       </para>
       </footnote> are online, the ID of the NUMA node to which the logical processor
       belongs and with which other logical processors L1/L2/L3 cache is shared <footnote
@@ -798,14 +849,14 @@
     <para>
       Each worker-thread runs a set of worker-fibers. The fiber-pool implements a
       strategy how worker-fibers are created and destroyed. A worker-fiber dequeues
-      a job from the job queue of the worker-thread, So each job is associated with
-      on worker-fiber. After finishing the job the fiber dequeues the next job, This
-      operation might block the worker-fiber but not the worker-thread, which is
-      capable to execute job by running another worker-fiber. The pool is stored
-      on thread's stack, so its life time is the life time of the worker-thread.
-      The creation of worker-fibers, the processing of job and the destruction of
-      worker-fibers are done inside <code><phrase role="keyword">operator</phrase><phrase
-      role="special">()</phrase></code> of the fiber pool.
+      a job from the job-queue of the worker-thread, so each job is associated with
+      one worker-fiber. After finishing the job, the fiber dequeues the next job.
+      This operation might block the worker-fiber (if queue is empty) but not the
+      worker-thread, which is capable to execute other jobs by running another worker-fiber.
+      The pool is stored on thread's stack. The creation of worker-fibers, the processing
+      of jobs and the destruction of worker-fibers are done inside <code><phrase
+      role="keyword">operator</phrase><phrase role="special">()</phrase></code> of
+      the fiber pool (implicit interface).
     </para>
     <bridgehead renderas="sect3" id="job.pools.h0">
       <phrase id="job.pools.synopsis"/><link linkend="job.pools.synopsis">Synopsis</link>
@@ -853,11 +904,7 @@
           <listitem>
             <para>
               Creates <code><phrase role="identifier">N</phrase></code> worker-fibers
-              and connects them with the job queue of the worker-thread. A worker.fiber
-              gets removed (destroyed) if the job-queue is empty, worker-fibers are
-              ready to run and more than <code><phrase role="identifier">Min</phrase></code>
-              worker-fibers are running. Before this function returns all worker-fibers
-              are interrupted and joined.
+              and connects them with the job queue of the worker-thread.
             </para>
           </listitem>
         </varlistentry>
@@ -895,10 +942,10 @@
             <para>
               Creates <code><phrase role="identifier">Min</phrase></code> worker-fibers
               and connects them with the job queue of the worker-thread. If job queue
-              is not empty or no worker-fibers are ready to run than <code><phrase
-              role="identifier">N</phrase></code>, a new worker-fiber will be spawned
-              until <code><phrase role="identifier">Max</phrase></code> worker-fibers
-              are running. A worker.fiber gets removed (destroyed) if the job-queue
+              is not empty or less than <code><phrase role="identifier">N</phrase></code>
+              worker-fibers are ready to run, a new worker-fiber will be spawned
+              till <code><phrase role="identifier">Max</phrase></code> worker-fibers
+              are running. A worker-fiber gets removed (destroyed) if the job-queue
               is empty, worker-fibers are ready to run and more than <code><phrase
               role="identifier">Min</phrase></code> worker-fibers are running. Before
               this function returns all worker-fibers are interrupted and joined.
@@ -933,11 +980,11 @@
       <para>
         NUMA == non-uniform memory access
       </para>
-      </footnote>, to which a logical processor belongs. This feature can be used
-      to reduce the latency of memory access, e.g. data is allocated on physical
-      memory near the logical processor. For instance <link linkend="class_numa_fixedsize_stack"> <code>numa_fixedsize_stack</code></link> allocates
-      the stacks of the worker-fibers on the physical memory belonging to the NUMA
-      node of the dedicated logical processor (the worker-thread is pinned to).
+      </footnote>. This feature can be used to reduce the latency of memory access,
+      e.g. data is allocated on physical memory near the logical processor. For instance
+      <link linkend="class_numa_fixedsize_stack"> <code>numa_fixedsize_stack</code></link> allocates the stacks of worker-fibers
+      on the physical memory belonging to the NUMA node of the dedicated logical
+      processor.
     </para>
     <section id="job.numa.numa_allocator">
       <title><anchor id="class_numa_allocator"/><link linkend="job.numa.numa_allocator">Class

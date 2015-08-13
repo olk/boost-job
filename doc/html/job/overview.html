@@ -28,18 +28,19 @@
 </h2></div></div></div>
 <p>
       <span class="bold"><strong>Boost.Job</strong></span> provides a framework for asynchronous
-      execution of job-graphs <sup>[<a name="job.overview.f0" href="#ftn.job.overview.f0" class="footnote">1</a>]</sup> of arbitrary dependency, e.g. solving the many-dependent-jobs problem
-      (M: worker jobs, N: jobs waiting for other jobs; M &lt;&lt; N).
+      execution of job-graphs <sup>[<a name="job.overview.f0" href="#ftn.job.overview.f0" class="footnote">1</a>]</sup> of arbitrary dependency, e.g. the library solves the many-dependent-jobs
+      problem (M: worker threads, N: jobs waiting on other jobs; M &lt;&lt; N).
     </p>
 <p>
       Each (logical) processor of a dedicated processor set (configurable) gets a
-      worker-thread assigned. Each worker-thread runs a fiber-pool (launch policy
-      is customizable). A submitted job is always executed by a worker-fiber. By
-      using <span class="bold"><strong>Boost.Fiber</strong></span> jobs are scheduled cooperatively
-      so that a job can yield to other jobs during its execution. Jobs can be synchronized
-      via primitives like mutex's, conditions, barriers and channels (message exchange)
-      from <span class="bold"><strong>Boost.Fiber</strong></span> without blocking the worker-thread.
-      Fibers provide a fast context switch.
+      worker-thread assigned (the worker-thread is pinned to the logical processor;
+      the OS-scheudler does not re-scheduled it to another logical processor). Each
+      worker-thread runs a fiber-pool (launch policy, customizable). A submitted
+      job is always executed by a worker-fiber. While utilizing <span class="bold"><strong>Boost.Fiber</strong></span>,
+      jobs are scheduled cooperatively so that a job can yield to other jobs during
+      its execution. Jobs can be synchronized via primitives like mutex's, conditions,
+      barriers and channels (message exchange) provided by <span class="bold"><strong>Boost.Fiber</strong></span>
+      without blocking the worker-thread. Fibers provide a fast context switch.
     </p>
 <p>
       <span class="bold"><strong>Boost.Job</strong></span> supports to inspect the NUMA topology

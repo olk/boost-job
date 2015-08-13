@@ -82,15 +82,16 @@
 <dt><span class="term">Effects:</span></dt>
 <dd><p>
               Depending on parameter <code class="computeroutput"><span class="identifier">topology</span></code>,
-              <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">threads</span></code> are created and pinned to
-              the logical processors. Depending on the FiberPool strategy, <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">fibers</span></code> are launched.
+              worker-threads are created and pinned to the logical processors. The
+              FiberPool strategy determines how worker-fibers are launched.
             </p></dd>
 <dt><span class="term">Note:</span></dt>
 <dd><p>
-              StackAllocator is required to allocate a stack for the internal <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">fibers</span></code>. If StackAllocator is not
-              explicitly passed, a <a class="link" href="../stack.html#class_numa_fixedsize_stack"> <code class="computeroutput">numa_fixedsize_stack</code></a> is
-              used by default. <a class="link" href="../pools/static_pool.html#class_static_pool"> <code class="computeroutput">static_pool&lt;&gt;</code></a> for 64 <code class="computeroutput"><span class="identifier">worker</span><span class="special">-</span><span class="identifier">fibers</span></code> is used if no FiberPool is
-              specified
+              StackAllocator is required to allocate a stack used by the worker-fibers.
+              If StackAllocator is not explicitly passed <a class="link" href="../stack.html#class_numa_fixedsize_stack"> <code class="computeroutput">numa_fixedsize_stack</code></a>
+is
+              used by default. As default fiber pool <a class="link" href="../pools/static_pool.html#class_static_pool"> <code class="computeroutput">static_pool&lt;&gt;</code></a> with
+              64 worker-fibers is used.
             </p></dd>
 </dl>
 </div>
@@ -141,8 +142,10 @@
 <dt><span class="term">Note:</span></dt>
 <dd><p>
               The job is executed by the worker-thread running on logical processor
-              <code class="computeroutput"><span class="identifier">cpuid</span></code>. If no Allocator
-              is passed, <a class="link" href="../numa/numa_allocator.html#class_numa_allocator"> <code class="computeroutput">numa_allocator&lt;&gt;</code></a> is used.
+              wht the ID <code class="computeroutput"><span class="identifier">cpuid</span></code>. If
+              no Allocator is passed, <a class="link" href="../numa/numa_allocator.html#class_numa_allocator"> <code class="computeroutput">numa_allocator&lt;&gt;</code></a> is
+              used. Calling <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;&gt;::</span><span class="identifier">get</span><span class="special">()</span></code>
+              inside a job is not adviced because it could block the worker-thread.
             </p></dd>
 </dl>
 </div>
@@ -174,8 +177,11 @@
 <dt><span class="term">Note:</span></dt>
 <dd><p>
               The job is executed by the worker-thread running on logical processor
-              <code class="computeroutput"><span class="identifier">cpuid</span></code>. If no Allocator
-              is passed, <a class="link" href="../numa/numa_allocator.html#class_numa_allocator"> <code class="computeroutput">numa_allocator&lt;&gt;</code></a> is used.
+              with ID <code class="computeroutput"><span class="identifier">cpuid</span></code>. If no
+              Allocator is passed, <a class="link" href="../numa/numa_allocator.html#class_numa_allocator"> <code class="computeroutput">numa_allocator&lt;&gt;</code></a> is used.
+              Calling <code class="computeroutput"><span class="identifier">boost</span><span class="special">::</span><span class="identifier">fibers</span><span class="special">::</span><span class="identifier">future</span><span class="special">&lt;&gt;::</span><span class="identifier">get</span><span class="special">()</span></code>
+              inside a job is save because it does <span class="bold"><strong>not</strong></span>
+              block the worker-thread.
             </p></dd>
 </dl>
 </div>

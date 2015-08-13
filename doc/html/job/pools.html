@@ -35,13 +35,13 @@
 <p>
       Each worker-thread runs a set of worker-fibers. The fiber-pool implements a
       strategy how worker-fibers are created and destroyed. A worker-fiber dequeues
-      a job from the job queue of the worker-thread, So each job is associated with
-      on worker-fiber. After finishing the job the fiber dequeues the next job, This
-      operation might block the worker-fiber but not the worker-thread, which is
-      capable to execute job by running another worker-fiber. The pool is stored
-      on thread's stack, so its life time is the life time of the worker-thread.
-      The creation of worker-fibers, the processing of job and the destruction of
-      worker-fibers are done inside <code class="computeroutput"><span class="keyword">operator</span><span class="special">()</span></code> of the fiber pool.
+      a job from the job-queue of the worker-thread, so each job is associated with
+      one worker-fiber. After finishing the job, the fiber dequeues the next job.
+      This operation might block the worker-fiber (if queue is empty) but not the
+      worker-thread, which is capable to execute other jobs by running another worker-fiber.
+      The pool is stored on thread's stack. The creation of worker-fibers, the processing
+      of jobs and the destruction of worker-fibers are done inside <code class="computeroutput"><span class="keyword">operator</span><span class="special">()</span></code> of
+      the fiber pool (implicit interface).
     </p>
 <h4>
 <a name="job.pools.h0"></a>

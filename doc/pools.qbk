@@ -7,18 +7,17 @@
 
 [section:pools Pools]
 
-Each worker-thread runs a set of worker-fibers. The fiber-pool
-implements a strategy how worker-fibers are created and destroyed.
-A worker-fiber dequeues a job from the job queue of the worker-thread,
-So each job is associated with on worker-fiber. After finishing the
-job the fiber dequeues the next job, This operation might block the
-worker-fiber but not the worker-thread, which is capable to execute
-job by running another worker-fiber.
-The pool is stored on thread's stack, so its life time is the life
-time of the worker-thread.
-The creation of worker-fibers, the processing of job and the
-destruction of worker-fibers are done inside `operator()` of the
-fiber pool.
+Each worker-thread runs a set of worker-fibers. The fiber-pool implements a
+strategy how worker-fibers are created and destroyed.
+A worker-fiber dequeues a job from the job-queue of the worker-thread, so each
+job is associated with one worker-fiber. After finishing the job, the fiber
+dequeues the next job. This operation might block the worker-fiber (if queue is
+empty) but not the worker-thread, which is capable to execute other jobs by
+running another worker-fiber.
+The pool is stored on thread's stack.
+The creation of worker-fibers, the processing of jobs and the destruction of
+worker-fibers are done inside `operator()` of the fiber pool (implicit
+interface).
 
 [heading Synopsis]
 
@@ -55,10 +54,7 @@ fiber pool.
 
 [variablelist
 [[Effects:] [Creates `N` worker-fibers and connects them with the job queue
-of the worker-thread.
-A worker.fiber gets removed (destroyed) if the job-queue is empty,
-worker-fibers are ready to run and more than `Min` worker-fibers are running.
-Before this function returns all worker-fibers are interrupted and joined.]]
+of the worker-thread.]]
 ]
 
 [endsect] [/ section Class static_pool]
@@ -85,10 +81,10 @@ Before this function returns all worker-fibers are interrupted and joined.]]
 
 [variablelist
 [[Effects:] [Creates `Min` worker-fibers and connects them with the job queue
-of the worker-thread. If job queue is not empty or no worker-fibers are ready
-to run than `N`, a new worker-fiber will be spawned until `Max` worker-fibers
+of the worker-thread. If job queue is not empty or less than `N` worker-fibers
+are ready to run, a new worker-fiber will be spawned till `Max` worker-fibers
 are running.
-A worker.fiber gets removed (destroyed) if the job-queue is empty,
+A worker-fiber gets removed (destroyed) if the job-queue is empty,
 worker-fibers are ready to run and more than `Min` worker-fibers are running.
 Before this function returns all worker-fibers are interrupted and joined.]]
 ]
