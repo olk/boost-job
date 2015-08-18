@@ -13,6 +13,7 @@
 
 #include <boost/array.hpp>
 #include <boost/assert.hpp>
+#include <boost/fiber/barrier.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/utility.hpp>
 
@@ -100,6 +101,28 @@ void test_preempt_rec_function_static() {
     BOOST_CHECK_EQUAL( 5, f.get() );
 }
 
+void test_preempt_interrupt() {
+    std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
+    boost::jobs::scheduler s( cpus,
+                              boost::jobs::static_pool< 3 >() );
+    boost::fibers::barrier b1( 2);
+    boost::fibers::barrier b2( 2);
+    std::future< void > f = s.submit_preempt( cpus[0].processor_id,
+              [&b1,&b2](){
+                b1.wait();
+                b2.wait();
+              });
+    b1.wait();
+    s.shutdown();
+    bool thrown = false;
+    try {
+        f.get();
+    } catch ( boost::fibers::fiber_interrupted const&) {
+        thrown = true;
+    }
+    BOOST_CHECK( thrown);
+}
+
 void test_coop_lambda_static() {
     int n = 10;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
@@ -149,6 +172,29 @@ void test_coop_rec_function_static() {
     BOOST_CHECK_EQUAL( 5, f.get() );
 }
 
+void test_coop_interrupt() {
+    std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
+    boost::jobs::scheduler s( cpus,
+                              boost::jobs::static_pool< 3 >() );
+    boost::fibers::barrier b1( 2);
+    boost::fibers::barrier b2( 2);
+    boost::fibers::future< void > f = s.submit_coop( cpus[0].processor_id,
+              [&b1,&b2](){
+                b1.wait();
+                b2.wait();
+              });
+    b1.wait(),
+    s.shutdown();
+    bool thrown = false;
+    try {
+        f.get();
+    } catch ( boost::fibers::fiber_interrupted const&) {
+        thrown = true;
+    }
+    BOOST_CHECK( thrown);
+}
+
+
 boost::unit_test::test_suite * init_unit_test_suite( int, char* []) {
     boost::unit_test::test_suite * test =
         BOOST_TEST_SUITE("Boost.Job: job test suite");
@@ -157,11 +203,13 @@ boost::unit_test::test_suite * init_unit_test_suite( int, char* []) {
     test->add( BOOST_TEST_CASE( & test_preempt_function_static) );
     test->add( BOOST_TEST_CASE( & test_preempt_mem_function_static) );
     test->add( BOOST_TEST_CASE( & test_preempt_rec_function_static) );
+    test->add( BOOST_TEST_CASE( & test_preempt_interrupt) );
 
     test->add( BOOST_TEST_CASE( & test_coop_lambda_static) );
     test->add( BOOST_TEST_CASE( & test_coop_function_static) );
     test->add( BOOST_TEST_CASE( & test_coop_mem_function_static) );
     test->add( BOOST_TEST_CASE( & test_coop_rec_function_static) );
+    test->add( BOOST_TEST_CASE( & test_coop_interrupt) );
 
     return test;
 }

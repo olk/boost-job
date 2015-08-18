@@ -28,7 +28,6 @@ scheduler::shutdown() {
     for ( auto p : topology_) {
         worker_threads_[p.first]->shutdown();
     }
-    worker_threads_.clear();
 }
 
 }}

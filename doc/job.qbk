@@ -25,15 +25,15 @@
     }}}
 
 A job is a small unit of code that can be executed independently and parallel,
-e.g. it's a fain-grained work item.
+e.g. it's a fine-grained work item.
 Each job is executed by a worker-fiber, running in a worker-thread. Fibers are
 scheduled cooperatively so that a job can yield to other jobs during its
 execution. The result of a job is transported via a future.
 
-The worker-thread is pinned to the logical processor, e.g. the OS-ssScheduler
+The worker-thread is pinned to the logical processor, e.g. the OS-scheduler
 does not schedule the thread to another processor.
 
-Class __scheduler__ manages the worker-fibers (creating and pinning on logical
+Class __scheduler__ manages the worker-threads (creating and pinning on logical
 processor) and gives access to the different worker-threads via
 __sched_psubmit__ (blocks thread in `get()`) and __sched_csubmit__ (does not
 block thread in `get()`).
@@ -67,7 +67,7 @@ Jobs can be synchronized (without blocking the worker-thread) by
 using synchronization objects (like mutex, condition_variables ...) from
 __boost_fiber__. For instance a job can wait for the result of a sub-job using
 `boost::fibers::future<>` (spawning sub-job by calling __sched_csubmit__)
-without blocking the worker-thread on which it is executed. It doesn't matter
+without blocking the worker-thread on which it is running. It doesn't matter
 to which logical processor the sub-job was submitted.
 
     boost::jobs::scheduler s( topo, boost::jobs::static_pool< 2 >() );
@@ -108,7 +108,7 @@ blocked, e.g. if one of the two jobs is waiting for a notification (inside
 `condition_variable::wait()`) other jobs (== worker-fibers) on that
 logical processor are able to be resumed/executed.
 
-The library solves the many-dependeint-jobs problem - N jobs are waiting on 
+The library solves the many-dependent-jobs problem - N jobs are waiting on 
 other jobs (maybe result of computation or some event) while M worker-threads
 service the job system. Without cooperative scheduling the system would block
 if M << N.
