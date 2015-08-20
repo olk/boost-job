@@ -7,6 +7,7 @@
 #include "boost/job/scheduler.hpp"
 
 #include <algorithm> // std::move()
+#include <exception>
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -16,17 +17,23 @@ namespace boost {
 namespace jobs {
 
 scheduler::~scheduler() noexcept {
-    try {
-        shutdown();
-    } catch ( ... ) {
-    }
+    shutdown();
 }
 
 void
 scheduler::shutdown() {
+    std::exception_ptr except;
     // shutdown worker threads
     for ( auto p : topology_) {
-        worker_threads_[p.first]->shutdown();
+        try {
+            worker_threads_[p.first]->shutdown();
+        } catch ( ... ) {
+            except = std::current_exception();
+        }
+    }
+    // re-throw exception
+    if ( except) {
+        std::rethrow_exception( except);
     }
 }
 

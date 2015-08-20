@@ -9,13 +9,13 @@
 
 __boost_job__  provides a framework for asynchronous execution of job-graphs 
 [footnote A job is a small unit of code that can be executed independently and
-parallel, e.g. it's a fain-grained work item] of arbitrary dependency, e.g.
+parallel, e.g. it's a fine-grained work item] of arbitrary dependency, e.g.
 the library solves the many-dependent-jobs problem (M: worker threads, N: jobs
 waiting on other jobs; M << N).
 
 Each logical processor of a dedicated processor set gets a worker-thread
 assigned (the worker-thread is pinned to the logical processor; the OS-scheudler
-does not re-scheduled it to another logical processor). Each worker-thread runs
+does not re-schedule it to another logical processor). Each worker-thread runs
 a fiber-pool (customizable).
 A submitted job is always executed by a worker-fiber.
 While utilizing __boost_fiber__, jobs are scheduled cooperatively so that a job
@@ -30,7 +30,7 @@ access] topology (e.g. which logical processors are online, and which processors
 share L1/L2/L3 cache). This information can be used to select the appropriate
 processor for a job.
 For a fast access to job related data, __boost_job__ provides functions and
-classes to allocate memory on NUMA nodes [footnote processors of a NUMA node
+classes to allocate memory on NUMA nodes [footnote Processors of a NUMA node
 share cache and have a faster access to its associated memory bank than
 processors of other nodes.].
 
@@ -53,7 +53,7 @@ The namespaces used are:
 __boost_job__ depends upon __boost_fiber__.
 Boost version 1.59.0 or greater is required.
 
-[info This library is C++14-only!]
+[note This library is C++14-only!]
 
 
 [endsect]

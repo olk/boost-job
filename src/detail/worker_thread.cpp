@@ -19,11 +19,8 @@ namespace detail {
 thread_local worker_thread *
 worker_thread::instance_ = nullptr;
 
-worker_thread::~worker_thread() {
-    try {
-        shutdown();
-    } catch ( ... ) {
-    }
+worker_thread::~worker_thread() noexcept {
+    shutdown();
 }
 
 void
@@ -32,9 +29,9 @@ worker_thread::shutdown() {
         BOOST_ASSERT( ! shtdwn_);
         // set termination flag
         shtdwn_ = true;
-        // notify master fiber
+        // notify master-fiber
         rdzv_.notify();
-        // join worker thread
+        // join worker-thread
         thrd_.join();
     }
 }

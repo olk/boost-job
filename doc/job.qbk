@@ -35,8 +35,9 @@ does not schedule the thread to another processor.
 
 Class __scheduler__ manages the worker-threads (creating and pinning on logical
 processor) and gives access to the different worker-threads via
-__sched_psubmit__ (blocks thread in `get()`) and __sched_csubmit__ (does not
-block thread in `get()`).
+__sched_psubmit__ (returns `std::future<>`[footnote `std::future<>::get()`
+blocks thread]) and __sched_csubmit__ (returns `boost::fibers::future<>`
+[footnote `boost::fibers::future<>::get()` does not block threadi]).
 The worker-threads and their worker-fibers are interrupted and joined by calling
 __sched_shutdown__.
 
@@ -63,12 +64,11 @@ __sched_shutdown__.
 Exception thrown inside the job function are catched and transported via the
 returned future.
 
-Jobs can be synchronized (without blocking the worker-thread) by
-using synchronization objects (like mutex, condition_variables ...) from
-__boost_fiber__. For instance a job can wait for the result of a sub-job using
-`boost::fibers::future<>` (spawning sub-job by calling __sched_csubmit__)
-without blocking the worker-thread on which it is running. It doesn't matter
-to which logical processor the sub-job was submitted.
+Jobs can be synchronized using synchronization objects (like mutex,
+condition_variables ...) from __boost_fiber__. For instance a job can wait for
+the result of a sub-job using `boost::fibers::future<>` (spawning sub-job by
+calling __sched_csubmit__) without blocking the worker-thread on which it is
+running. It doesn't matter to which logical processor the sub-job was submitted.
 
     boost::jobs::scheduler s( topo, boost::jobs::static_pool< 2 >() );
     boost::fibers::mutex mtx;
@@ -76,11 +76,11 @@ to which logical processor the sub-job was submitted.
     int i = 0;
     std::future< void > f1 = s.submit_preempt( topo[0].processor_id,
               [&mtx,&cond, &i](){
-                  // aquire lock on mutex, might be happen before the other jobs tries to acquire lock
+                  // aquire lock on mutex, might happen before the other jobs tries to acquire lock
                   std::unique_lock< boost::fibers::mutex > lk( mtx);
                   // wait for synchronizing shared variable `i`
                   // will suspended current job
-                  // other jobs running on this worker-thread are able be resumed/executed
+                  // other jobs running on this worker-thread are resumed/executed
                   cond.wait( lk, [&i](){ return 0 != i; });
                   // resumed because notified by other job
                   std::cout << "fiber " << boost::this_fiber::get_id() << ": received: " << i << std::endl;
@@ -91,7 +91,7 @@ to which logical processor the sub-job was submitted.
                   boost::this_fiber::sleep_for( std::chrono::seconds( 1) );
                   // aquire lock on mutex
                   std::unique_lock< boost::fibers::mutex > lk( mtx);
-                  // modify shard variable
+                  // modify shared variable `i`
                   i = 7;
                   // notify other job
                   cond.notify_all();
@@ -105,13 +105,12 @@ to which logical processor the sub-job was submitted.
 In the example above a mutex and a condition-variable are used to synchronize
 two jobs running on different logical processors. The worker-threads are not
 blocked, e.g. if one of the two jobs is waiting for a notification (inside
-`condition_variable::wait()`) other jobs (== worker-fibers) on that
-logical processor are able to be resumed/executed.
+`condition_variable::wait()`), other jobs (== worker-fibers) on that
+logical processor are resumed/executed.
 
 The library solves the many-dependent-jobs problem - N jobs are waiting on 
-other jobs (maybe result of computation or some event) while M worker-threads
-service the job system. Without cooperative scheduling the system would block
-if M << N.
+other jobs while M worker-threads service the job system. Without cooperative
+scheduling the system would block if M << N.
 
     int fibonacci( int n) {
         if ( 1 == n || 2 == n) {
@@ -202,7 +201,7 @@ used.]]
 
 [heading Destructor]
 
-        ~scheduler();
+        ~scheduler() noexcept;
 
 [variablelist
 [[Effects:] [Interrupts and joins the worker-fibers and -threads.]]

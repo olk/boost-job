@@ -88,7 +88,7 @@ public:
         return ptr_t( new ( p) worker_thread( topology, std::forward< FiberPool >( pool), salloc) );
     }
 
-    ~worker_thread();
+    ~worker_thread() noexcept;
 
     worker_thread( worker_thread const&) = delete;
 

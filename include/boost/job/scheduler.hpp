@@ -62,6 +62,8 @@ public:
         BOOST_ASSERT( topology.size() == topology_.size() );
         // only for given CPUs allocate worker threads
         for ( auto t : topology) {
+            // worker-threads are allocated on NUMA nodes
+            // to which the logical processors belongs
             worker_threads_[t.processor_id] = detail::worker_thread::create(
                     t, std::forward< FiberPool >( pool), salloc);
         }

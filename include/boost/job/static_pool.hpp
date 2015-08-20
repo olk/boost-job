@@ -57,7 +57,7 @@ struct static_pool {
         rdzv->wait();
         // close queue
         q->close();
-        // interrupt worker fibers
+        // interrupt worker-fibers
         for ( fibers::fiber & f : fibs) {
             f.interrupt();
         }
