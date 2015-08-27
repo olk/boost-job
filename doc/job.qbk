@@ -37,7 +37,7 @@ Class __scheduler__ manages the worker-threads (creating and pinning on logical
 processor) and gives access to the different worker-threads via
 __sched_psubmit__ (returns `std::future<>`[footnote `std::future<>::get()`
 blocks thread]) and __sched_csubmit__ (returns `boost::fibers::future<>`
-[footnote `boost::fibers::future<>::get()` does not block threadi]).
+[footnote `boost::fibers::future<>::get()` does not block thread]).
 The worker-threads and their worker-fibers are interrupted and joined by calling
 __sched_shutdown__.
 
@@ -210,13 +210,13 @@ used.]]
 
 [template_member_heading scheduler..submit_preempt]
 
-        template< typename Allocator, typename Fn, typename ... Args >
-        std::future< typename std::result_of< Fn( Args ... ) >::type >
-        submit_preempt( std::allocator_arg_t, Allocator alloc, uint32_t cpuid, Fn && fn, Args && ... args);
-
         template< typename Fn, typename ... Args >
         std::future< typename std::result_of< Fn( Args ... ) >::type >
         submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args);
+
+        template< typename Allocator, typename Fn, typename ... Args >
+        std::future< typename std::result_of< Fn( Args ... ) >::type >
+        submit_preempt( std::allocator_arg_t, Allocator alloc, uint32_t cpuid, Fn && fn, Args && ... args);
 
 [variablelist
 [[Returns:] [a `std::future` associated with the job.]]
@@ -229,11 +229,11 @@ block the worker-thread.]]
 [template_member_heading scheduler..submit_coop]
 
         template< typename Fn, typename ... Args >
-        std::future< typename std::result_of< Fn( Args ... ) >::type >
-        submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args);
+        fibers::future< typename std::result_of< Fn( Args ... ) >::type >
+        submit_coop( uint32_t cpuid, Fn && fn, Args && ... args);
 
         template< typename Allocator, typename Fn, typename ... Args >
-        fibers::future< typename std::result_of< Fn&&( Args ... ) >::type >
+        fibers::future< typename std::result_of< Fn( Args ... ) >::type >
         submit_coop( std::allocator_arg_t, Allocator alloc, uint32_t cpuid, Fn && fn, Args && ... args);
 
 [variablelist

@@ -78,7 +78,7 @@ end of each stack. The memory is simply managed by `std::malloc()` and
 
 [class_heading numa_fixedsize_stack]
 
-__boost_job__ provides the class __numa_fixedsize_stack__ which models
+__boost_job__ provides the class __nfixedsize_stack__ which models
 the __stack_allocator_concept__.
 In contrast to __fixedsize_stack__ and __pfixedsize_stack__ it allocates 
 physical memory on a given specific NUMA node.
