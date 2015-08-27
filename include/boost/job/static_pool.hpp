@@ -14,6 +14,7 @@
 
 #include <boost/config.hpp>
 #include <boost/fiber/fiber.hpp>
+#include <boost/fiber/operations.hpp>
 
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/queue.hpp>
@@ -31,15 +32,16 @@ struct static_pool {
     static_pool() = default;
 
     template< typename StackAllocator >
-    void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                     detail::queue * q, detail::rendezvous * rdzv) {
+    void operator()( StackAllocator salloc,
+                     detail::queue * q,
+                     detail::rendezvous * rdzv) {
         std::array< fibers::fiber, N > fibs;
         // create worker fibers
         for ( std::size_t i = 0; i < N; ++i) {
             fibs[i] = std::move(
                 fibers::fiber( std::allocator_arg, salloc,
-                               [shtdwn,q] () {
-                                    while ( ! shtdwn->load() && ! q->closed() ) {
+                               [q] () {
+                                    while ( ! this_fiber::interruption_requested() && ! q->closed() ) {
                                         try {
                                             // dequeue work items
                                             detail::work::ptr_t w;

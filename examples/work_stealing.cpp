@@ -26,14 +26,18 @@ int fibonacci( int n) {
 }
 
 int main( int argc, char * argv[]) {
-    int n = 5;
-    std::vector< boost::jobs::topo_t > topology{ boost::jobs::cpu_topology()[0] };
-    boost::jobs::scheduler s( topology,
-                              boost::jobs::dynamic_pool< 1, 5 >() );
-    for ( int i = 0; i < 5; ++i) {
-        boost::fibers::future< int > f = s.submit_coop( 0, fibonacci, n);
-        std::cout << "fibonacci(" << n << ") = " << f.get() << std::endl;
+    std::vector< boost::jobs::topo_t > topo( boost::jobs::cpu_topology() );
+    if ( 2 > topo.size() ) {
+        std::cout << "at least two logical CPUs are required for this example" << std::endl;
+        return EXIT_SUCCESS;
     }
+
+    boost::jobs::scheduler s( topo, boost::jobs::ws_pool< 4 >() );
+
+    int n = 5;
+    int result( s.submit_preempt( topo[0].processor_id, fibonacci, n).get() );
+    std::cout << "fibonacci(" << n << ") = " << result << std::endl;
+
     std::cout << "main: done" << std::endl;
 
     return EXIT_SUCCESS;

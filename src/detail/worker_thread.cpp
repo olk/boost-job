@@ -6,6 +6,8 @@
 
 #include "boost/job/detail/worker_thread.hpp"
 
+#include "boost/job/scheduler.hpp"
+
 #include <boost/assert.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -23,12 +25,17 @@ worker_thread::~worker_thread() noexcept {
     shutdown();
 }
 
+queue *
+worker_thread::queue_at( uint32_t processor_id) noexcept {
+    BOOST_ASSERT( nullptr != sched_);
+
+    ptr_t other = sched_->worker_at( processor_id);
+    return nullptr != other ? other->local_queue() : nullptr;
+}
+
 void
 worker_thread::shutdown() {
     if ( thrd_.joinable() ) {
-        BOOST_ASSERT( ! shtdwn_);
-        // set termination flag
-        shtdwn_ = true;
         // notify master-fiber
         rdzv_.notify();
         // join worker-thread

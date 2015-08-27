@@ -13,6 +13,7 @@
 #include <boost/fiber/future.hpp>
 
 #include <boost/job/detail/config.hpp>
+#include <boost/job/detail/queue.hpp>
 #include <boost/job/detail/work.hpp>
 #include <boost/job/detail/worker_thread.hpp>
 #include <boost/job/memory.hpp>
@@ -29,6 +30,11 @@ namespace this_worker {
 inline
 topo_t topology() noexcept {
     return detail::worker_thread::instance()->topology();
+}
+
+inline
+detail::queue * queue_at( uint32_t processor_id) noexcept {
+    return detail::worker_thread::instance()->queue_at( processor_id);
 }
 
 template< typename Fn, typename ... Args >

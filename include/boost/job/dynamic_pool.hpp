@@ -14,6 +14,7 @@
 
 #include <boost/config.hpp>
 #include <boost/fiber/fiber.hpp>
+#include <boost/fiber/operations.hpp>
 
 #include <boost/job/detail/config.hpp>
 #include <boost/job/detail/queue.hpp>
@@ -36,9 +37,10 @@ private:
 
         template< typename StackAllocator, typename WorkerMap >
         void worker_fn_( StackAllocator salloc,
-                         std::atomic_bool * shtdwn, detail::queue * q,
-                         WorkerMap * fibs) {
-            while ( ! shtdwn->load() && ! q->closed() ) {
+                         detail::queue * q,
+                         WorkerMap * fibs,
+                         std::size_t * spawned) {
+            while ( ! this_fiber::interruption_requested() && ! q->closed() ) {
                 try {
                     // dequeue work items
                     detail::work::ptr_t w;
@@ -52,11 +54,12 @@ private:
                     // current fiber might be blocked (waiting/suspended)
                     // so that at least one worker fiber is able to dequeue
                     // a new work item from the queue
-                    if ( Max > fibs->size() &&
+                    if ( Max > * spawned &&
                          ( ! q->empty() || N >= fibers::ready_fibers() ) ) {
-                        worker_fiber f( salloc, shtdwn, q, fibs);
+                        worker_fiber f( salloc, q, fibs, spawned);
                         fibers::fiber::id id( f.get_id() );
                         ( * fibs)[id] = std::move( f);
+                        ++( * spawned);
                     }
                     // process work item
                     w->execute();
@@ -64,6 +67,7 @@ private:
                     for ( typename fiber_map_t::value_type & v : ( * fibs) ) {
                         if ( v.second.terminated() ) {
                             v.second.detach();
+                            --( * spawned);
                         }
                     }
                     // mark worker fiber for detaching if:
@@ -71,7 +75,7 @@ private:
                     // - more than Min worker fibers are spawned
                     // - fiber scheduler has fibers ready to run
                     if ( q->empty() &&
-                         Min < fibs->size() &&
+                         Min < * spawned &&
                          0 < fibers::ready_fibers() ) {
                         // releases allocated resources
                         fibs->at( this_fiber::get_id() ).set_terminated();
@@ -89,12 +93,12 @@ private:
 
         template< typename StackAllocator, typename WorkerMap >
         worker_fiber( StackAllocator salloc,
-                      std::atomic_bool * shtdwn,
                       detail::queue * q,
-                      WorkerMap * fibs) :
+                      WorkerMap * fibs,
+                      std::size_t * spawned) :
             fib_( std::allocator_arg, salloc,
                   & worker_fiber::worker_fn_< StackAllocator, WorkerMap >, this,
-                  salloc, shtdwn, q, fibs),
+                  salloc, q, fibs, spawned),
             terminated_( false) {
         }
 
@@ -156,12 +160,15 @@ public:
     dynamic_pool() = default;
 
     template< typename StackAllocator >
-    void operator()( StackAllocator salloc, std::atomic_bool * shtdwn,
-                     detail::queue * q, detail::rendezvous * rdzv) {
+    void operator()( StackAllocator salloc,
+                     detail::queue * q,
+                     detail::rendezvous * rdzv) {
         fiber_map_t fibs;
+        std::size_t spawned = 0;
         // create Min worker fibers
         for ( std::size_t i = 0; i < Min; ++i) {
-            worker_fiber f( salloc, shtdwn, q, & fibs);
+            ++spawned;
+            worker_fiber f( salloc, q, & fibs, & spawned);
             fibers::fiber::id id( f.get_id() );
             fibs[id] = std::move( f);
         }

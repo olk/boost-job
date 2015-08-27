@@ -8,7 +8,6 @@
 #define BOOST_JOBS_DETAIL_WORKER_THREAD_H
 
 #include <algorithm> // std::move()
-#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <future>
@@ -38,6 +37,9 @@
 
 namespace boost {
 namespace jobs {
+
+class scheduler;
+
 namespace detail {
 
 class BOOST_JOBS_DECL worker_thread {
@@ -45,11 +47,11 @@ private:
     thread_local static worker_thread   *   instance_;
 
     std::size_t                             use_count_;
-    std::atomic_bool                        shtdwn_;
     rendezvous                              rdzv_;
     topo_t                                  topology_;
     queue                                   queue_;
     std::thread                             thrd_;
+    scheduler                           *   sched_;
 
     template< typename FiberPool, typename StackAllocator >
     void worker_fn_( FiberPool && pool, StackAllocator salloc) {
@@ -60,17 +62,17 @@ private:
         instance_ = this;
 
         // master fiber (== worker thread) executes fiber pool
-        pool( salloc, & shtdwn_, & queue_, & rdzv_);
+        pool( salloc, & queue_, & rdzv_);
     }
 
     template< typename FiberPool, typename StackAllocator >
-    worker_thread( topo_t const& topology, FiberPool && pool, StackAllocator salloc) :
+    worker_thread( topo_t const& topology, FiberPool && pool, StackAllocator salloc, scheduler * sched) :
         use_count_( 0),
-        shtdwn_( false),
         rdzv_(),
         topology_( topology),
         queue_(),
-        thrd_( & worker_thread::worker_fn_< FiberPool, StackAllocator >, this, std::forward< FiberPool >( pool), salloc) {
+        thrd_( & worker_thread::worker_fn_< FiberPool, StackAllocator >, this, std::forward< FiberPool >( pool), salloc),
+        sched_( sched) {
     }
 
 public:
@@ -82,10 +84,10 @@ public:
     }
 
     template< typename FiberPool, typename StackAllocator >
-    static ptr_t create( topo_t const& topology, FiberPool && pool, StackAllocator salloc) {
+    static ptr_t create( topo_t const& topology, FiberPool && pool, StackAllocator salloc, scheduler * sched) {
         numa_allocator< worker_thread > alloc( topology.node_id);
         worker_thread * p = alloc.allocate( 1);
-        return ptr_t( new ( p) worker_thread( topology, std::forward< FiberPool >( pool), salloc) );
+        return ptr_t( new ( p) worker_thread( topology, std::forward< FiberPool >( pool), salloc, sched) );
     }
 
     ~worker_thread() noexcept;
@@ -128,6 +130,12 @@ public:
             alloc, std::move( pt), std::forward< Args >( args) ... ) );
         return std::move( f);
     }
+
+    queue * local_queue() noexcept {
+        return & queue_;
+    }
+
+    queue * queue_at( uint32_t processor_id) noexcept;
 
     friend void intrusive_ptr_add_ref( worker_thread * t) {
         ++t->use_count_;

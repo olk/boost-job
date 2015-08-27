@@ -35,6 +35,8 @@ namespace jobs {
 
 class BOOST_JOBS_DECL scheduler {
 private:
+    friend class detail::worker_thread;
+
     std::map< uint32_t, topo_t >                topology_;
     std::vector< detail::worker_thread::ptr_t > worker_threads_;
 
@@ -45,6 +47,10 @@ private:
             map[t.processor_id] = t;
         }
         return map;
+    }
+
+    detail::worker_thread::ptr_t worker_at( uint32_t processor_id) {
+        return worker_threads_[processor_id];
     }
 
 public:
@@ -65,7 +71,7 @@ public:
             // worker-threads are allocated on NUMA nodes
             // to which the logical processors belongs
             worker_threads_[t.processor_id] = detail::worker_thread::create(
-                    t, std::forward< FiberPool >( pool), salloc);
+                    t, std::forward< FiberPool >( pool), salloc, this);
         }
     }
 
@@ -83,7 +89,7 @@ public:
         // only for given CPUs allocate worker threads
         for ( auto t : topology) {
             worker_threads_[t.processor_id] = detail::worker_thread::create(
-                    t, std::forward< FiberPool >( pool), numa_fixedsize( t.node_id) );
+                    t, std::forward< FiberPool >( pool), numa_fixedsize( t.node_id), this);
         }
     }
 
