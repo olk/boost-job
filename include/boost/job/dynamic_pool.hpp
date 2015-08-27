@@ -40,6 +40,7 @@ private:
                          detail::queue * q,
                          WorkerMap * fibs,
                          std::size_t * spawned) {
+            ++( * spawned);
             while ( ! this_fiber::interruption_requested() && ! q->closed() ) {
                 try {
                     // dequeue work items
@@ -54,12 +55,10 @@ private:
                     // current fiber might be blocked (waiting/suspended)
                     // so that at least one worker fiber is able to dequeue
                     // a new work item from the queue
-                    if ( Max > * spawned &&
-                         ( ! q->empty() || N >= fibers::ready_fibers() ) ) {
+                    if ( Max > * spawned && ( ! q->empty() || N >= fibers::ready_fibers() ) ) {
                         worker_fiber f( salloc, q, fibs, spawned);
                         fibers::fiber::id id( f.get_id() );
                         ( * fibs)[id] = std::move( f);
-                        ++( * spawned);
                     }
                     // process work item
                     w->execute();
@@ -67,7 +66,6 @@ private:
                     for ( typename fiber_map_t::value_type & v : ( * fibs) ) {
                         if ( v.second.terminated() ) {
                             v.second.detach();
-                            --( * spawned);
                         }
                     }
                     // mark worker fiber for detaching if:
@@ -84,6 +82,7 @@ private:
                 } catch ( fibers::fiber_interrupted const&) {
                 }
             }
+            --( * spawned);
         }
 
     public:
@@ -167,7 +166,6 @@ public:
         std::size_t spawned = 0;
         // create Min worker fibers
         for ( std::size_t i = 0; i < Min; ++i) {
-            ++spawned;
             worker_fiber f( salloc, q, & fibs, & spawned);
             fibers::fiber::id id( f.get_id() );
             fibs[id] = std::move( f);
