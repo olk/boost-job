@@ -34,6 +34,10 @@ exe dependent_jobs
     : dependent_jobs.cpp
     ;
 
+exe dependent_jobs_mt
+    : dependent_jobs_mt.cpp
+    ;
+
 exe synchronize
     : synchronize.cpp
     ;
