@@ -22,3 +22,5 @@ For a fast access to job related data, boost.job provides functions and
 classes to allocate memory on NUMA nodes (processors of a NUMA node share
 cache and have a faster access to its associated memory bank than processors of other
 nodes.).
+
+Documentation: http://olk.github.io/libs/job/doc/html/
