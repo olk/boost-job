@@ -14,7 +14,7 @@
 
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
-#include <boost/context/detail/invoke.hpp>
+#include <boost/context/detail/apply.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <boost/job/detail/config.hpp>
@@ -104,7 +104,7 @@ work::ptr_t create_work( Allocator alloc, Fn && fn, Args && ... args) {
         create_work_(
             alloc,
             [fn=std::forward< Fn >( fn),tpl=std::make_tuple( std::forward< Args >( args) ...)] () mutable -> decltype( auto) {
-                context::detail::invoke_helper( std::move( fn), std::move( tpl) );
+                context::detail::apply( std::move( fn), std::move( tpl) );
             }) );
 }
 

@@ -41,45 +41,40 @@ private:
                          WorkerMap * fibs,
                          std::size_t * spawned) {
             ++( * spawned);
-            while ( ! this_fiber::interruption_requested() && ! q->closed() ) {
-                try {
-                    // dequeue work items
-                    detail::work::ptr_t w;
-                    if ( detail::queue_op_status::success != q->pop( w) ) {
-                        continue;
+            while ( ! q->closed() ) {
+                // dequeue work items
+                detail::work::ptr_t w;
+                if ( detail::queue_op_status::success != q->pop( w) ) {
+                    continue;
+                }
+                // spawn one new worker fiber if:
+                // - Max worker fibers are not reached
+                // - work queue is not empty OR fiber scheduler has no more
+                //   than `N` fiber ready to run
+                // current fiber might be blocked (waiting/suspended)
+                // so that at least one worker fiber is able to dequeue
+                // a new work item from the queue
+                if ( Max > * spawned && ( ! q->empty() || ! fibers::has_ready_fibers() ) ) {
+                    worker_fiber f( salloc, q, fibs, spawned);
+                    fibers::fiber::id id( f.get_id() );
+                    ( * fibs)[id] = std::move( f);
+                }
+                // process work item
+                w->execute();
+                // detach + erase terminated worker fibers
+                for ( typename fiber_map_t::value_type & v : ( * fibs) ) {
+                    if ( v.second.terminated() ) {
+                        v.second.detach();
                     }
-                    // spawn one new worker fiber if:
-                    // - Max worker fibers are not reached
-                    // - work queue is not empty OR fiber scheduler has no more
-                    //   than `N` fiber ready to run
-                    // current fiber might be blocked (waiting/suspended)
-                    // so that at least one worker fiber is able to dequeue
-                    // a new work item from the queue
-                    if ( Max > * spawned && ( ! q->empty() || N >= fibers::ready_fibers() ) ) {
-                        worker_fiber f( salloc, q, fibs, spawned);
-                        fibers::fiber::id id( f.get_id() );
-                        ( * fibs)[id] = std::move( f);
-                    }
-                    // process work item
-                    w->execute();
-                    // detach + erase terminated worker fibers
-                    for ( typename fiber_map_t::value_type & v : ( * fibs) ) {
-                        if ( v.second.terminated() ) {
-                            v.second.detach();
-                        }
-                    }
-                    // mark worker fiber for detaching if:
-                    // - queue of work items is empty
-                    // - more than Min worker fibers are spawned
-                    // - fiber scheduler has fibers ready to run
-                    if ( q->empty() &&
-                         Min < * spawned &&
-                         0 < fibers::ready_fibers() ) {
-                        // releases allocated resources
-                        fibs->at( this_fiber::get_id() ).set_terminated();
-                        break;
-                    }
-                } catch ( fibers::fiber_interrupted const&) {
+                }
+                // mark worker fiber for detaching if:
+                // - queue of work items is empty
+                // - more than Min worker fibers are spawned
+                // - fiber scheduler has fibers ready to run
+                if ( q->empty() && Min < * spawned && fibers::has_ready_fibers() ) {
+                    // releases allocated resources
+                    fibs->at( this_fiber::get_id() ).set_terminated();
+                    break;
                 }
             }
             --( * spawned);
@@ -121,16 +116,9 @@ private:
 
         worker_fiber & operator=( worker_fiber const&) = delete;
 
-        void interrupt() noexcept {
-            fib_.interrupt();
-        }
-
         void join() {
             if ( fib_.joinable() ) {
-                try {
-                    fib_.join();
-                } catch ( fibers::fiber_interrupted const&) {
-                }
+                fib_.join();
             }
         }
 
@@ -174,12 +162,6 @@ public:
         rdzv->wait();
         // close queue
         q->close();
-        // interrupt worker fibers
-        for ( typename fiber_map_t::value_type & v : fibs) {
-            if ( ! v.second.terminated() ) {
-                v.second.interrupt();
-            }
-        }
         // join worker fibers
         for ( typename fiber_map_t::value_type & v : fibs) {
             v.second.join();

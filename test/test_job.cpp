@@ -92,35 +92,13 @@ void test_preempt_mem_function_static() {
     BOOST_CHECK_EQUAL( 55, f.get() );
 }
 
-void test_preempt_rec_function_static() {
+void test_preempt_rec_function_dynamic() {
     int n = 5;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::dynamic_pool< 1, 4 >() );
+                              boost::jobs::dynamic_pool< 2, 4 >() );
     std::future< int > f = s.submit_preempt( cpus[0].processor_id, rec_fibonacci, n);
     BOOST_CHECK_EQUAL( 5, f.get() );
-}
-
-void test_preempt_interrupt() {
-    std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
-    boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >() );
-    boost::fibers::barrier b1( 2);
-    boost::fibers::barrier b2( 2);
-    std::future< void > f = s.submit_preempt( cpus[0].processor_id,
-              [&b1,&b2](){
-                b1.wait();
-                b2.wait();
-              });
-    b1.wait();
-    s.shutdown();
-    bool thrown = false;
-    try {
-        f.get();
-    } catch ( boost::fibers::fiber_interrupted const&) {
-        thrown = true;
-    }
-    BOOST_CHECK( thrown);
 }
 
 void test_coop_lambda_static() {
@@ -163,37 +141,14 @@ void test_coop_mem_function_static() {
     BOOST_CHECK_EQUAL( 55, f.get() );
 }
 
-void test_coop_rec_function_static() {
+void test_coop_rec_function_dynamic() {
     int n = 5;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::dynamic_pool< 1, 4 >() );
+                              boost::jobs::dynamic_pool< 2, 4 >() );
     boost::fibers::future< int > f = s.submit_coop( cpus[0].processor_id, rec_fibonacci, n);
     BOOST_CHECK_EQUAL( 5, f.get() );
 }
-
-void test_coop_interrupt() {
-    std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
-    boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >() );
-    boost::fibers::barrier b1( 2);
-    boost::fibers::barrier b2( 2);
-    boost::fibers::future< void > f = s.submit_coop( cpus[0].processor_id,
-              [&b1,&b2](){
-                b1.wait();
-                b2.wait();
-              });
-    b1.wait(),
-    s.shutdown();
-    bool thrown = false;
-    try {
-        f.get();
-    } catch ( boost::fibers::fiber_interrupted const&) {
-        thrown = true;
-    }
-    BOOST_CHECK( thrown);
-}
-
 
 boost::unit_test::test_suite * init_unit_test_suite( int, char* []) {
     boost::unit_test::test_suite * test =
@@ -202,14 +157,12 @@ boost::unit_test::test_suite * init_unit_test_suite( int, char* []) {
     test->add( BOOST_TEST_CASE( & test_preempt_lambda_static) );
     test->add( BOOST_TEST_CASE( & test_preempt_function_static) );
     test->add( BOOST_TEST_CASE( & test_preempt_mem_function_static) );
-    test->add( BOOST_TEST_CASE( & test_preempt_rec_function_static) );
-    test->add( BOOST_TEST_CASE( & test_preempt_interrupt) );
+    test->add( BOOST_TEST_CASE( & test_preempt_rec_function_dynamic) );
 
     test->add( BOOST_TEST_CASE( & test_coop_lambda_static) );
     test->add( BOOST_TEST_CASE( & test_coop_function_static) );
     test->add( BOOST_TEST_CASE( & test_coop_mem_function_static) );
-    test->add( BOOST_TEST_CASE( & test_coop_rec_function_static) );
-    test->add( BOOST_TEST_CASE( & test_coop_interrupt) );
+    test->add( BOOST_TEST_CASE( & test_coop_rec_function_dynamic) );
 
     return test;
 }

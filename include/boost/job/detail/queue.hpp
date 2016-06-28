@@ -17,7 +17,7 @@
 
 #include <boost/config.hpp>
 #include <boost/fiber/channel_op_status.hpp>
-#include <boost/fiber/condition.hpp>
+#include <boost/fiber/condition_variable.hpp>
 #include <boost/fiber/exceptions.hpp>
 #include <boost/fiber/mutex.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -41,11 +41,11 @@ private:
         closed
     };
 
-    queue_status            state_;
-    work::ptr_t             head_;
-    work::ptr_t         *   tail_;
-    mutable fibers::mutex   mtx_;
-    fibers::condition       not_empty_cond_;
+    queue_status                state_;
+    work::ptr_t                 head_;
+    work::ptr_t             *   tail_;
+    mutable fibers::mutex       mtx_;
+    fibers::condition_variable  not_empty_cond_;
 
     bool is_closed_() const noexcept {
         return queue_status::closed == state_;

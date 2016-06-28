@@ -31,7 +31,7 @@ int main( int argc, char * argv[]) {
         std::cout << "at least two logical CPUs are required for this example" << std::endl;
         return EXIT_SUCCESS;
     }
-    boost::jobs::scheduler s( topo, boost::jobs::dynamic_pool< 1, 3 >() );
+    boost::jobs::scheduler s( topo, boost::jobs::static_pool< 10 >() );
     int n = 5;
     for ( int i = 0; i < 20; ++i) {
         boost::fibers::future< int > f = s.submit_coop(

@@ -10,7 +10,7 @@
 #include <cstddef>
 
 #include <boost/config.hpp>
-#include <boost/fiber/condition.hpp>
+#include <boost/fiber/condition_variable.hpp>
 #include <boost/fiber/mutex.hpp>
 
 #include <boost/job/detail/config.hpp>
@@ -25,9 +25,9 @@ namespace detail {
 
 class BOOST_JOBS_DECL rendezvous {
 private:
-	bool                flag_;
-    fibers::mutex       mtx_;
-    fibers::condition   cond_;
+	bool                        flag_;
+    fibers::mutex               mtx_;
+    fibers::condition_variable  cond_;
 
 public:
 	rendezvous();

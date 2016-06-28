@@ -29,7 +29,7 @@ int main( int argc, char * argv[]) {
     int n = 5;
     std::vector< boost::jobs::topo_t > topology{ boost::jobs::cpu_topology()[0] };
     boost::jobs::scheduler s( topology,
-                              boost::jobs::dynamic_pool< 1, 4 >() );
+                              boost::jobs::dynamic_pool< 2, 4 >() );
     for ( int i = 0; i < 20; ++i) {
         boost::fibers::future< int > f = s.submit_coop( 0, fibonacci, n);
         std::cout << "fibonacci(" << n << ") = " << f.get() << std::endl;

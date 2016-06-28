@@ -41,17 +41,14 @@ struct static_pool {
             fibs[i] = std::move(
                 fibers::fiber( std::allocator_arg, salloc,
                                [q] () {
-                                    while ( ! this_fiber::interruption_requested() && ! q->closed() ) {
-                                        try {
-                                            // dequeue work items
-                                            detail::work::ptr_t w;
-                                            if ( detail::queue_op_status::success != q->pop( w) ) {
-                                                continue;
-                                            }
-                                            // process work items
-                                            w->execute();
-                                        } catch ( fibers::fiber_interrupted const&) {
+                                    while ( ! q->closed() ) {
+                                        // dequeue work items
+                                        detail::work::ptr_t w;
+                                        if ( detail::queue_op_status::success != q->pop( w) ) {
+                                            continue;
                                         }
+                                        // process work items
+                                        w->execute();
                                     }
                                 }));
         }
@@ -59,17 +56,10 @@ struct static_pool {
         rdzv->wait();
         // close queue
         q->close();
-        // interrupt worker-fibers
-        for ( fibers::fiber & f : fibs) {
-            f.interrupt();
-        }
         // join worker fibers
         for ( fibers::fiber & f : fibs) {
             if ( f.joinable() ) {
-                try {
-                    f.join();
-                } catch ( fibers::fiber_interrupted const&) {
-                }
+                f.join();
             }
         }
     }
