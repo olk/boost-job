@@ -38,7 +38,11 @@ detail::queue * queue_at( uint32_t processor_id) noexcept {
 }
 
 template< typename Fn, typename ... Args >
-decltype( auto)
+fibers::future<
+    typename std::result_of<
+        typename std::decay< Fn >::type( typename std::decay< Args >::type ... )
+    >::type
+>
 submit( Fn && fn, Args && ... args) {
     return detail::worker_thread::instance()->submit_coop(
         std::allocator_arg,

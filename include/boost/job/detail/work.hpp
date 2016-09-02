@@ -11,6 +11,7 @@
 #include <memory>
 #include <tuple>
 #include <utility>
+#include <type_traits>
 
 #include <boost/assert.hpp>
 #include <boost/config.hpp>
@@ -62,18 +63,19 @@ public:
     work::ptr_t   nxt;
 };
 
-template< typename Allocator, typename Fn >
+template< typename Allocator, typename Pt, typename ... Args >
 class wrapped_work : public work {
 public:
     typedef typename Allocator::template rebind< wrapped_work >::other   allocator_t;
 
-    wrapped_work( allocator_t alloc, Fn && fn) :
+    wrapped_work( allocator_t alloc, Pt && pt, Args && ... args) :
         alloc_( alloc),
-        fn_( std::forward< Fn >( fn) ) {
+        pt_( std::forward< Pt >( pt) ),
+        args_( std::forward< Args >( args) ... ) {
     }
 
     void execute() override final {
-        fn_();
+        context::detail::apply( std::move( pt_), std::move( args_) );
     }
 
     void deallocate() override final {
@@ -81,8 +83,9 @@ public:
     }
 
 private:
-    allocator_t alloc_; 
-    Fn          fn_;
+    allocator_t                                         alloc_; 
+    typename std::decay< Pt >::type                     pt_;
+    std::tuple< typename std::decay< Args >::type ... > args_;
 
     static void deallocate_( wrapped_work * w) {
         allocator_t alloc( w->alloc_);
@@ -91,21 +94,13 @@ private:
     }
 };
 
-template< typename Allocator, typename Fn >
-work * create_work_( Allocator a, Fn && fn) {
-    typename wrapped_work< Allocator, Fn >::allocator_t alloc( a);
+template< typename Allocator, typename Pt, typename ... Args >
+work::ptr_t create_work( Allocator a, Pt && pt, Args && ... args) {
+    typedef wrapped_work< Allocator, Pt, Args ... > wrapper_t;
+    typename wrapper_t::allocator_t alloc( a);
     work * pw = alloc.allocate( 1);
-    return new ( pw) wrapped_work< Allocator, Fn >( alloc, std::forward< Fn >( fn) );
-}
-
-template< typename Allocator, typename Fn, typename ... Args >
-work::ptr_t create_work( Allocator alloc, Fn && fn, Args && ... args) {
     return work::ptr_t(
-        create_work_(
-            alloc,
-            [fn=std::forward< Fn >( fn),tpl=std::make_tuple( std::forward< Args >( args) ...)] () mutable -> decltype( auto) {
-                context::detail::apply( std::move( fn), std::move( tpl) );
-            }) );
+        new ( pw) wrapper_t( alloc, std::forward< Pt >( pt), std::forward< Args >( args) ... ) );
 }
 
 }}}

@@ -104,7 +104,11 @@ public:
     scheduler & operator=( scheduler const&) = delete;
 
     template< typename Allocator, typename Fn, typename ... Args >
-    decltype( auto)
+    std::future<
+        typename std::result_of<
+            typename std::decay< Fn >::type(typename std::decay< Args >::type ... )
+        >::type
+    >
     submit_preempt( std::allocator_arg_t, Allocator alloc,
                     uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_preempt(
@@ -114,7 +118,11 @@ public:
     }
 
     template< typename Fn, typename ... Args >
-    decltype( auto)
+    std::future<
+        typename std::result_of<
+            typename std::decay< Fn >::type(typename std::decay< Args >::type ... )
+        >::type
+    >
     submit_preempt( uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_preempt(
             std::allocator_arg,
@@ -123,7 +131,11 @@ public:
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
-    decltype( auto)
+    fibers::future<
+        typename std::result_of<
+            typename std::decay< Fn >::type(typename std::decay< Args >::type ... )
+        >::type
+    >
     submit_coop( std::allocator_arg_t, Allocator alloc,
                  uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_coop(
@@ -133,7 +145,11 @@ public:
     }
 
     template< typename Fn, typename ... Args >
-    decltype( auto)
+    fibers::future<
+        typename std::result_of<
+            typename std::decay< Fn >::type(typename std::decay< Args >::type ... )
+        >::type
+    >
     submit_coop( uint32_t cpuid, Fn && fn, Args && ... args) {
         return worker_threads_[cpuid]->submit_coop(
             std::allocator_arg,
