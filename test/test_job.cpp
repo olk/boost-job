@@ -150,6 +150,29 @@ void test_coop_rec_function_dynamic() {
     BOOST_CHECK_EQUAL( 5, f.get() );
 }
 
+void test_lambda_static() {
+    int n = 10;
+    std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
+    boost::jobs::scheduler s( cpus,
+                              boost::jobs::static_pool< 3 >(),
+                              boost::jobs::fixedsize_stack() );
+    int result = -1;
+    boost::fibers::barrier b( 2);
+    s.submit( cpus[0].processor_id,
+              [n,&result,&b](){
+                  int first = 1, second = 1, third = -1;
+                  for ( int i = 2; i < n; ++i) {
+                      third = first + second;
+                      first = second;
+                      second = third;
+                  }
+                  result = third;
+                  b.wait();
+              });
+    b.wait();
+    BOOST_CHECK_EQUAL( 55, result);
+}
+
 boost::unit_test::test_suite * init_unit_test_suite( int, char* []) {
     boost::unit_test::test_suite * test =
         BOOST_TEST_SUITE("Boost.Job: job test suite");
@@ -163,6 +186,8 @@ boost::unit_test::test_suite * init_unit_test_suite( int, char* []) {
     test->add( BOOST_TEST_CASE( & test_coop_function_static) );
     test->add( BOOST_TEST_CASE( & test_coop_mem_function_static) );
     test->add( BOOST_TEST_CASE( & test_coop_rec_function_dynamic) );
+
+    test->add( BOOST_TEST_CASE( & test_lambda_static) );
 
     return test;
 }

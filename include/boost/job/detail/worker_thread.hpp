@@ -103,6 +103,15 @@ public:
     }
 
     template< typename Allocator, typename Fn, typename ... Args >
+    void
+    submit( std::allocator_arg_t, Allocator alloc, Fn && fn, Args && ... args) {
+        // enqueue work into MPSC-queue
+        queue_.push( create_work(
+            alloc,
+            std::forward< Fn >( fn), std::forward< Args >( args) ... ) );
+    }
+
+    template< typename Allocator, typename Fn, typename ... Args >
     std::future<
         typename std::result_of<
             typename std::decay< Fn >::type(typename std::decay< Args >::type ... )

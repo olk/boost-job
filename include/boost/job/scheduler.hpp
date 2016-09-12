@@ -104,6 +104,25 @@ public:
     scheduler & operator=( scheduler const&) = delete;
 
     template< typename Allocator, typename Fn, typename ... Args >
+    void
+    submit( std::allocator_arg_t, Allocator alloc,
+            uint32_t cpuid, Fn && fn, Args && ... args) {
+        return worker_threads_[cpuid]->submit(
+            std::allocator_arg,
+            alloc,
+            std::forward< Fn >( fn), std::forward< Args >( args) ... );
+    }
+
+    template< typename Fn, typename ... Args >
+    void
+    submit( uint32_t cpuid, Fn && fn, Args && ... args) {
+        return worker_threads_[cpuid]->submit(
+            std::allocator_arg,
+            numa_allocator< detail::work >( topology_[cpuid].node_id),
+            std::forward< Fn >( fn), std::forward< Args >( args) ... );
+    }
+
+    template< typename Allocator, typename Fn, typename ... Args >
     std::future<
         typename std::result_of<
             typename std::decay< Fn >::type(typename std::decay< Args >::type ... )
