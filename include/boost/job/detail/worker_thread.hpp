@@ -57,12 +57,10 @@ private:
     void worker_fn_( FiberPool && pool, StackAllocator salloc) {
         // pin thread to CPU
         pin_thread( topology_.processor_id);
-
         // set static thread-local pointer
         instance_ = this;
-
         // master fiber (== worker thread) executes fiber pool
-        pool( salloc, & queue_, & rdzv_);
+        pool( salloc, queue_, rdzv_);
     }
 
     template< typename FiberPool, typename StackAllocator >

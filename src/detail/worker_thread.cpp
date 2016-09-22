@@ -36,6 +36,8 @@ worker_thread::queue_at( uint32_t processor_id) noexcept {
 void
 worker_thread::shutdown() {
     if ( thrd_.joinable() ) {
+        // close queue
+        queue_.close();
         // notify master-fiber
         rdzv_.notify();
         // join worker-thread
