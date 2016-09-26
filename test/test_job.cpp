@@ -96,7 +96,7 @@ void test_preempt_rec_function_dynamic() {
     int n = 5;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::dynamic_pool< 2, 4 >() );
+                              boost::jobs::dynamic_pool< 1 >() );
     std::future< int > f = s.submit_preempt( cpus[0].processor_id, rec_fibonacci, n);
     BOOST_CHECK_EQUAL( 5, f.get() );
 }
@@ -145,7 +145,7 @@ void test_coop_rec_function_dynamic() {
     int n = 5;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::dynamic_pool< 2, 4 >() );
+                              boost::jobs::dynamic_pool< 1 >() );
     boost::fibers::future< int > f = s.submit_coop( cpus[0].processor_id, rec_fibonacci, n);
     BOOST_CHECK_EQUAL( 5, f.get() );
 }

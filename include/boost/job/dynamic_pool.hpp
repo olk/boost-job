@@ -30,7 +30,7 @@
 namespace boost {
 namespace jobs {
 
-template< std::size_t Min, std::size_t Max >
+template< std::size_t Min, std::size_t Max = 0 >
 class dynamic_pool {
 private:
     class worker_fiber {
@@ -55,7 +55,7 @@ private:
                 }
                 --wcounter;
                 // spawn worker fiber if no worker fiber is waiting in queue
-                if ( Max > ecounter && 0 == wcounter) {
+                if ( (0 == Max || Max > ecounter) && 0 == wcounter) {
                     worker_fiber f( salloc, queue, fibs, ecounter, wcounter);
                     fibers::fiber::id id( f.get_id() );
                     fibs[id] = std::move( f);
