@@ -56,8 +56,7 @@ void test_preempt_lambda_static() {
     int n = 10;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >(),
-                              boost::jobs::fixedsize_stack() );
+                              boost::jobs::static_pool< 3 >() );
     std::future< int > f = s.submit_preempt( cpus[0].processor_id,
               [n](){
                   int first = 1, second = 1, third = -1;
@@ -75,8 +74,7 @@ void test_preempt_function_static() {
     int n = 10;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >(),
-                              boost::jobs::fixedsize_stack() );
+                              boost::jobs::static_pool< 3 >() );
     std::future< int > f = s.submit_preempt( cpus[0].processor_id, fn_fibonacci, n);
     BOOST_CHECK_EQUAL( 55, f.get() );
 }
@@ -86,8 +84,7 @@ void test_preempt_mem_function_static() {
     fibonacci fib;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >(),
-                              boost::jobs::fixedsize_stack() );
+                              boost::jobs::static_pool< 3 >() );
     std::future< int > f = s.submit_preempt( cpus[0].processor_id, & fibonacci::compute, fib, n);
     BOOST_CHECK_EQUAL( 55, f.get() );
 }
@@ -105,8 +102,7 @@ void test_coop_lambda_static() {
     int n = 10;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >(),
-                              boost::jobs::fixedsize_stack() );
+                              boost::jobs::static_pool< 3 >() );
     boost::fibers::future< int > f = s.submit_coop( cpus[0].processor_id,
               [n](){
                   int first = 1, second = 1, third = -1;
@@ -124,8 +120,7 @@ void test_coop_function_static() {
     int n = 10;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >(),
-                              boost::jobs::fixedsize_stack() );
+                              boost::jobs::static_pool< 3 >() );
     boost::fibers::future< int > f = s.submit_coop( cpus[0].processor_id, fn_fibonacci, n);
     BOOST_CHECK_EQUAL( 55, f.get() );
 }
@@ -135,8 +130,7 @@ void test_coop_mem_function_static() {
     fibonacci fib;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >(),
-                              boost::jobs::fixedsize_stack() );
+                              boost::jobs::static_pool< 3 >() );
     boost::fibers::future< int > f = s.submit_coop( cpus[0].processor_id, & fibonacci::compute, fib, n);
     BOOST_CHECK_EQUAL( 55, f.get() );
 }
@@ -154,8 +148,7 @@ void test_lambda_static() {
     int n = 10;
     std::vector< boost::jobs::topo_t > cpus = boost::jobs::cpu_topology();
     boost::jobs::scheduler s( cpus,
-                              boost::jobs::static_pool< 3 >(),
-                              boost::jobs::fixedsize_stack() );
+                              boost::jobs::static_pool< 3 >() );
     int result = -1;
     boost::fibers::barrier b( 2);
     s.submit( cpus[0].processor_id,

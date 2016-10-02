@@ -25,6 +25,7 @@
 #include <boost/job/stack.hpp>
 #include <boost/job/static_pool.hpp>
 #include <boost/job/topology.hpp>
+#include <boost/job/worker_policy.hpp>
 
 #ifdef BOOST_HAS_ABI_HEADERS
 # include BOOST_ABI_PREFIX
@@ -54,30 +55,10 @@ private:
     }
 
 public:
-    template< typename FiberPool, typename StackAllocator >
+    template< typename FiberPool, typename WorkerPolicy = pin_to_cpu >
     scheduler( std::vector< topo_t > const& topology,
                FiberPool && pool,
-               StackAllocator salloc) :
-        topology_( create_topology_map( topology) ),
-        // hold max(CPU-IDs) worker threads
-        worker_threads_( std::max_element(
-                    topology.begin(),
-                    topology.end(),
-                    [](topo_t const& l,topo_t const& r){ return l.processor_id < r.processor_id; })->processor_id
-                + 1) {
-        BOOST_ASSERT( topology.size() == topology_.size() );
-        // only for given CPUs allocate worker threads
-        for ( auto t : topology) {
-            // worker-threads are allocated on NUMA nodes
-            // to which the logical processors belongs
-            worker_threads_[t.processor_id] = detail::worker_thread::create(
-                    t, std::forward< FiberPool >( pool), salloc, this);
-        }
-    }
-
-    template< typename FiberPool >
-    scheduler( std::vector< topo_t > const& topology,
-               FiberPool && pool) :
+               WorkerPolicy policy = WorkerPolicy{} ) :
         topology_( create_topology_map( topology) ),
         // hold max(CPU-IDs)
         worker_threads_( std::max_element(
@@ -86,11 +67,7 @@ public:
                     [](topo_t const& l,topo_t const& r){ return l.processor_id < r.processor_id; })->processor_id
                 + 1) {
         BOOST_ASSERT( topology.size() == topology_.size() );
-        // only for given CPUs allocate worker threads
-        for ( auto t : topology) {
-            worker_threads_[t.processor_id] = detail::worker_thread::create(
-                    t, std::forward< FiberPool >( pool), numa_fixedsize( t.node_id), this);
-        }
+        policy( topology, std::forward< FiberPool >( pool), this, worker_threads_);
     }
 
     scheduler( std::vector< topo_t > const& topology) :
